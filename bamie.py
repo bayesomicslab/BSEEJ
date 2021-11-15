@@ -1,17 +1,16 @@
+import time, os, gzip, pickle, random, sys, zipfile
+import numpy as np
+import pandas as pd
+import numba as nb
+import arviz as az
+from numba import jit
+from os import listdir
+import networkx as nx
 from scipy.stats import beta as sci_beta
 from scipy.stats import dirichlet, multinomial
 from scipy.special import gammaln, xlogy
-import time, os, gzip, shutil, pickle, random, sys
-import numpy as np
-import arviz as az
-from numba import jit
-import pandas as pd
-from os import listdir
-import networkx as nx
 from copy import deepcopy
 from collections import Counter
-import numba as nb
-import zipfile
 
 
 def computeDF(n_sample,effective_k,n_introns,result_df,gene_name,z_matrix,starts,ends):
@@ -25,6 +24,7 @@ def computeDF(n_sample,effective_k,n_introns,result_df,gene_name,z_matrix,starts
                     sample_id, intr, cl]
                 counter += 1
 
+
 def computeDF_vectorized(n_sample,effective_k,n_introns,result_df,gene_name,z_matrix,starts,ends):
     cls, intrs, startss, endss, sample_ids, zs = getvecs(n_sample*effective_k*n_introns,n_sample,effective_k,
                                                          n_introns,starts,ends,z_matrix)
@@ -35,6 +35,7 @@ def computeDF_vectorized(n_sample,effective_k,n_introns,result_df,gene_name,z_ma
     result_df.end = endss
     result_df["sample"] = sample_ids
     result_df.FPKM = zs
+
 
 @nb.jit(nb.types.UniTuple(nb.int32[:],6)(nb.int32,nb.int32,nb.int32,nb.int32,nb.int32[:],nb.int32[:],nb.int32[:,:,:]),nopython=True)
 def getvecs(overallsize,n_sample,effective_k,n_introns,starts,ends,z_matrix):
@@ -56,13 +57,6 @@ def getvecs(overallsize,n_sample,effective_k,n_introns,starts,ends,z_matrix):
                 zs[idx]=z_matrix[sample_id, intr, cl]
                 idx+=1
     return cls,intrs,startss,endss,sample_ids,zs
-
-def compress_and_delete(jsonfilename):
-    if os.path.exists(jsonfilename):
-        with open(jsonfilename, 'rb') as f_in:
-            with gzip.open(jsonfilename + '.gz', 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        os.remove(jsonfilename)
 
 
 def get_lo(intersection_M):
