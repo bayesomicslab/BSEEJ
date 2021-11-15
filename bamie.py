@@ -10,7 +10,6 @@ from os import listdir
 import networkx as nx
 from copy import deepcopy
 from collections import Counter
-from itertools import combinations
 import numba as nb
 import zipfile
 
@@ -66,22 +65,6 @@ def compress_and_delete(jsonfilename):
         os.remove(jsonfilename)
 
 
-# def write_split(txt_add, gene_list):
-#     for i in range(len(gene_list) // 100):
-#         txt_file = txt_add + str(i)
-#         this_gene_list = gene_list[i * 100:(i + 1) * 100]
-#         list2txt(txt_file, this_gene_list)
-#
-#     last_gene_list = gene_list[(i + 1) * 100:]
-#     list2txt(txt_add + str(i + 1), last_gene_list)
-
-#
-# def list2txt(file_name, gene_list):
-#     with open(file_name + ".txt", "w") as fobj:
-#         for x in gene_list[:-1]:
-#             fobj.write(x + "\n")
-#         fobj.write(gene_list[-1])
-#
 
 def get_lo(intersection_M):
     lo = np.zeros([intersection_M.shape[0], 1], dtype=int)
@@ -357,108 +340,6 @@ def needed_n_k_list(gene):
     return N_K_v
 
 
-def make_confusion_matrix(gene_run_info, tr_ex_int_df, this_gene, threshold, cut_off_threshold):
-
-    # cut_off_threshold, distance_threshold = 100, 100
-    This_gene_tr_int_df = tr_ex_int_df[tr_ex_int_df['gene'] == this_gene].reset_index()
-    This_gene_tr = list(set(This_gene_tr_int_df['transcript_id']))
-    This_gene_tr_int_df['tr_idx'] = -1
-    This_gene_tr_int_df['intron_idx'] = -1
-
-    # index transcripts
-    for tt in range(len(This_gene_tr_int_df)):
-        This_gene_tr_int_df.loc[tt, 'tr_idx'] = int(np.where(np.array(This_gene_tr) == This_gene_tr_int_df.loc[tt, 'transcript_id'])[0])
-
-    # index the intron excisions
-    param_dict = gene_run_info['param_dict']
-    dictw2id = param_dict['dictw2id']
-    for dw in dictw2id.keys():
-        start = int(dw.split('-')[0])
-        end = int(dw.split('-')[1])
-        start_match_list = list(np.abs(This_gene_tr_int_df['start']-start) <= 6)
-        end_match_list = list(np.abs(This_gene_tr_int_df['end'] - end) <= 6)
-        same_int_list = [a and b for a, b in zip(start_match_list, end_match_list)]
-        same_int_idx = [i for i, x in enumerate(same_int_list) if x]
-        This_gene_tr_int_df.loc[same_int_idx, 'intron_idx'] = dictw2id[dw]
-
-    This_gene_tr_int_df = This_gene_tr_int_df[This_gene_tr_int_df['intron_idx'] != -1]
-    This_gene_tr_int_df = This_gene_tr_int_df.sort_values(['tr_idx', 'intron_idx'], ascending=True)
-    this_gene_df_agg = This_gene_tr_int_df.sort_values(['tr_idx', 'intron_idx'], ascending=True).groupby(['tr_idx'])['intron_idx'].apply(list)
-
-    if 'new_b' not in gene_run_info.keys():
-
-        last_run = list(gene_run_info['gibbs'])[-1]
-        last_z = deepcopy(gene_run_info['gibbs'][last_run]['Z'])
-        last_b = deepcopy(gene_run_info['gibbs'][last_run]['b'])
-        new_b, new_z = merge_suplicate_clusters(last_b, last_z)
-
-    else:
-        new_b = deepcopy(gene_run_info['new_b'])
-        new_z = deepcopy(gene_run_info['new_Z'])
-
-    A = sorted(list(set(This_gene_tr_int_df['intron_idx'])))
-    all_pairs = list(combinations(A, 2))
-
-    b_clusters = set()
-    for kk in range(new_b.shape[0]):
-        this_kk = list(np.where(new_b[kk, :])[0])
-        this_kk = sorted(this_kk)
-        this_kk_pairs = list(combinations(this_kk, 2))
-        b_clusters = b_clusters.union(set(this_kk_pairs))
-    b_clusters = sorted(list(b_clusters))
-
-    expressed_transcripts = []
-    not_expressed_transcripts = []
-    existing_transcripts = sorted(list(set(This_gene_tr_int_df['tr_idx'])))
-
-    for i in existing_transcripts:
-
-    # for i in range(len(this_gene_df_agg)):
-
-        if len(list(np.where(np.sum(np.sum(new_z[:, this_gene_df_agg[i], :], axis=1), axis=1) > threshold)[
-                        0])) > cut_off_threshold:
-            expressed_transcripts.append(i)
-        else:
-            not_expressed_transcripts.append(i)
-
-    expressed_tr_pairs = set()
-    for ex_tr in expressed_transcripts:
-        expressed_tr_pairs = expressed_tr_pairs.union(set(combinations(this_gene_df_agg[ex_tr], 2)))
-    expressed_tr_pairs = sorted(list(expressed_tr_pairs))
-
-    TP_pairs = []
-    TN_pairs = []
-    FP_pairs = []
-    FN_pairs = []
-
-    for pair in all_pairs:
-        if pair in b_clusters and pair in expressed_tr_pairs:
-            TP_pairs.append(pair)
-        elif pair in b_clusters and pair not in expressed_tr_pairs:
-            FP_pairs.append(pair)
-        elif pair not in b_clusters and pair in expressed_tr_pairs:
-            FN_pairs.append(pair)
-        else:
-            TN_pairs.append(pair)
-
-    TN = len(TN_pairs)
-    TP = len(TP_pairs)
-    FN = len(FN_pairs)
-    FP = len(FP_pairs)
-
-    if TP + FP == 0:
-        precision = np.nan
-    else:
-        precision = TP/(TP+FP)
-
-    if TP + FN == 0:
-        recall = np.nan
-    else:
-        recall = TP/(TP+FN)
-
-    return TN, TP, FN, FP, precision, recall
-
-
 def compute_config_score(sam_df, trans_introns_f, config):
     # config = [1, 3, 7]
     tr_score_list = []
@@ -500,76 +381,6 @@ def calc_bic2(n_d, n_v, n_k, all_n_w, max_l):
 
     bic_k = num_theta + num_z + num_beta + num_b + num_pi
     return (bic_k * np.log(n_d)) - (2 * max_l)
-
-
-def gene_best_comb(main_folder, this_gene):
-
-    results_name = '_results.csv'
-
-    grid_df = pd.read_csv(main_folder + '/all_results/' + this_gene + '/' + this_gene + results_name)
-    if len(grid_df) > 0:
-        grid_agg_df = grid_df.groupby(['gene', 'N_K', 'alpha', 'eta', 'rs', 'epsilon', 'N_V', 'Max_likelihood', 'BIC1',
-                                       'BIC2', 'predictive_likelihood']).agg({'config': 'count', 'score': 'mean'}) \
-            .rename(columns={'config': 'n_clusters', 'score': 'score_avg', 'BIC1': 'BIC'}).reset_index()
-
-        grid_agg_df = grid_agg_df.rename(columns={'BIC1': 'BIC'}, errors="raise")
-
-        target_col_name = 'N_K'
-        n_k_list = list(set(grid_agg_df[target_col_name]))
-        pred_L_max = []
-        max_likelihood_list_max = []
-        best_tr_df = pd.DataFrame(columns=['gene', 'N_K', 'alpha', 'eta', 'rs', 'epsilon', 'str', 'Max_likelihood'],
-                                  index=n_k_list)
-        best_te_df = pd.DataFrame(columns=['gene', 'N_K', 'alpha', 'eta', 'rs', 'epsilon', 'str', 'predictive_likelihood'],
-                                  index=n_k_list)
-
-        for N_K in n_k_list:
-            this_df = grid_agg_df[grid_agg_df[target_col_name] == N_K]
-
-            max_likelihood_list_max.append(np.max(this_df['Max_likelihood']))
-            pred_L_max.append(np.max(this_df['predictive_likelihood']))
-
-            max_tr = np.max(this_df['Max_likelihood'])
-            max_te = np.max(this_df['predictive_likelihood'])
-
-            # training
-            best_comb_tr = this_df[this_df['Max_likelihood'] == max_tr]
-            best_alpha_tr = best_comb_tr['alpha'].values[0]
-            best_eta_tr = best_comb_tr['eta'].values[0]
-            best_rs_tr = best_comb_tr['rs'].values[0]
-            best_epsilon_tr = best_comb_tr['epsilon'].values[0]
-            best_alpha_tr_str = str(best_alpha_tr) if best_alpha_tr < 1 else str(int(best_alpha_tr))
-            best_eta_tr_str = str(best_eta_tr) if best_eta_tr < 1 else str(int(best_eta_tr))
-            best_rs_tr_str = str(best_rs_tr) if best_rs_tr < 1 else str(int(best_rs_tr))
-            best_epsilon_tr_str = str(best_epsilon_tr) if best_epsilon_tr < 1 else str(int(best_epsilon_tr))
-            best_tr_str = 'run_info_gene_' + this_gene + '_alpha_' + best_alpha_tr_str + '_eta_' + best_eta_tr_str + \
-                          '_epsilon_' + best_epsilon_tr_str + '_rs_' + best_rs_tr_str + '_K_' + str(N_K) + '.json'
-            best_tr_df.loc[N_K, :] = this_gene, N_K, best_alpha_tr, best_eta_tr, best_rs_tr, best_epsilon_tr, best_tr_str, \
-                                     max_tr
-
-            # test
-            best_comb_te = this_df[this_df['predictive_likelihood'] == max_te]
-            best_alpha_te = best_comb_te['alpha'].values[0]
-            best_eta_te = best_comb_te['eta'].values[0]
-            best_rs_te = best_comb_te['rs'].values[0]
-            best_epsilon_te = best_comb_te['epsilon'].values[0]
-            best_alpha_te_str = str(best_alpha_te) if best_alpha_te < 1 else str(int(best_alpha_te))
-            best_eta_te_str = str(best_eta_te) if best_eta_te < 1 else str(int(best_eta_te))
-            best_rs_te_str = str(best_rs_te) if best_rs_te < 1 else str(int(best_rs_te))
-            best_epsilon_te_str = str(best_epsilon_te) if best_epsilon_te < 1 else str(int(best_epsilon_te))
-            best_te_str = 'run_info_gene_' + this_gene + '_alpha_' + best_alpha_te_str + '_eta_' + best_eta_te_str + \
-                          '_epsilon_' + best_epsilon_te_str + '_rs_' + best_rs_te_str + '_K_' + str(N_K) + '.json'
-            best_te_df.loc[N_K, :] = this_gene, N_K, best_alpha_te, best_eta_te, best_rs_te, best_epsilon_te, best_te_str, \
-                                     max_te
-        best_tr_name = '_best_comb_tr.csv'
-        best_te_name = '_best_comb_te.csv'
-        best_tr_df.to_csv(main_folder + '/all_results/' + this_gene + '/' + this_gene + best_tr_name)
-        best_te_df.to_csv(main_folder + '/all_results/' + this_gene + '/' + this_gene + best_te_name)
-    else:
-        print(this_gene, 'has no results csv')
-        # best_global_te = best_te_df[best_te_df['predictive_likelihood'] == max(best_te_df['predictive_likelihood'])]['str'].values[0]
-        # best_global_tr = best_tr_df[best_tr_df['Max_likelihood'] == max(best_tr_df['Max_likelihood'])]['str'].values[0]
-        # return best_tr_name, best_te_name, best_global_tr, best_global_te
 
 
 @jit(nopython=True)
@@ -1066,7 +877,6 @@ class MODEL(object):
         # Beta: distribution of the Clusters over intron excisions
         Beta = np.zeros([n_k, gene.n_v])
         for k in range(n_k):
-            # Beta[k, :] = np.random.dirichlet(eta * np.ones(N_V))
             temp_dirb = np.array([np.nan])
             while np.isnan(sum(temp_dirb)):
                 temp_dirb = np.random.dirichlet(self.eta * np.ones(gene.n_v))
@@ -1177,15 +987,6 @@ class MODEL(object):
         for doc in range(0, self.run_info['document'].shape[0]):
             for v in range(0, self.run_info['N_V']):
 
-                # self.beta[:, v] = self.adjust_beta(v)
-
-                # self.beta[:, v] = np.array([self.epsilon if self.beta[tem, v] < self.epsilon else self.beta[tem, v] \
-                #                        for tem in range(self.beta[:, v].shape[0])])
-                # self.theta[doc, :] = self.adjust_theta(doc)
-
-                # self.theta[doc, :] = np.array([self.epsilon if self.theta[doc, tem] < self.epsilon else self.theta[doc, tem] \
-                #                           for tem in range(self.theta[doc, :].shape[0])])
-
                 ratio_v = np.exp(np.log(self.theta[doc, :]) + np.log(self.beta[:, v]))
                 ratio_v /= np.sum(ratio_v)
 
@@ -1193,11 +994,6 @@ class MODEL(object):
 
                 for k in range(0, self.run_info['N_K']):
                     self.z[doc, v, k] = np.count_nonzero(tempz == k)
-
-            # np.sum(self.z[doc,:,k]) counts the number of words in document doc which are assigned to cluster k
-
-        # self.z = update_z_loop_numba(self.beta, self.theta, self.run_info['document_tr'].shape[0], self.run_info['N_V'],
-        #                         self.run_info['N_K'], self.run_info['document_tr'])
 
 
     def update_theta(self):
@@ -1501,9 +1297,45 @@ class GENE(object):
         self.mis, self.max_ind_set = find_mis(self.nodes_df)
 
 
+def main():
+    # Model parameters
+    max_n_iter = 1000
+    burn_in = 100
+    convergence_checkpoint_interval = 50
+    eta = 0.01
+    alpha = 1
+    epsilon = 0.000001
+    r = 1
+    s = 1
+
+    # Read the reference file for simulated data
+    tr_ex_int_df = pd.read_csv(path_to_reference_file, index_col=0)
+
+    # Read gene junction files
+    with zipfile.ZipFile(os.path.join(main_path, gene_name)+'.zip', 'r') as zip_ref:
+        zip_ref.extractall(main_path)
+
+    # Make the model and gene objects
+    print('training gene', gene_name, 'with k =', n_k)
+    model = MODEL(eta=eta, alpha=alpha, epsilon=epsilon, r=r, s=s)
+
+    gene = GENE(gene_name, main_path)
+
+    # Preprocess the gene
+    gene.preprocess()
+
+    # Train the gene
+    model.train(gene, n_k, n_iter=max_n_iter, burn_in=burn_in,
+                convergence_checkpoint_interval=convergence_checkpoint_interval, verbose=True)
+
+    # Save all the results, including all the parameters in the model in a pickle file and clusters
+    result_path = save_results(gene, model)
+
+    # Evaluate the results
+    evaluate_gene(result_path, tr_ex_int_df, gene_name, gene.result_path)
+
 
 if __name__ == '__main__':
-
 
     if '-k' in sys.argv:
         n_k = int(sys.argv[sys.argv.index('-k') + 1])
@@ -1514,7 +1346,6 @@ if __name__ == '__main__':
         main_path = sys.argv[sys.argv.index('-a') + 1]
     else:
         main_path = ''
-        exit('Error: Select the main directory containing genes by -a.')
 
     if '-g' in sys.argv:
         gene_name = sys.argv[sys.argv.index('-g') + 1]
@@ -1524,35 +1355,6 @@ if __name__ == '__main__':
     if '-r' in sys.argv:
         path_to_reference_file = sys.argv[sys.argv.index('-r') + 1]
     else:
-        path_to_reference_file = ''
-        exit('Error: Select the path to reference file by -r.')
+        path_to_reference_file = 'reference_simulated_data.csv'
 
-    # Model parameters
-    max_n_iter = 1000
-    burn_in = 500
-    convergence_checkpoint_interval = 50
-    eta = 0.01
-    alpha = 1
-    epsilon = 0.000001
-    r = 1
-    s = 1
-
-    # my_gene_tr_intron = 'D:\\UCONN\\Isoform\\Junctions\\final_gene_tr_intron_sim.csv'
-    tr_ex_int_df = pd.read_csv(path_to_reference_file, index_col=0)
-
-    with zipfile.ZipFile(os.path.join(main_path, gene_name)+'.zip', 'r') as zip_ref:
-        zip_ref.extractall(main_path)
-
-    print('training gene', gene_name, 'with k =', n_k)
-    model = MODEL(eta=eta, alpha=alpha, epsilon=epsilon, r=r, s=s)
-
-    gene = GENE(gene_name, main_path)
-
-    gene.preprocess()
-
-    model.train(gene, n_k, n_iter=max_n_iter, burn_in=burn_in,
-                convergence_checkpoint_interval=convergence_checkpoint_interval, verbose=True)
-
-    result_path = save_results(gene, model)
-
-    evaluate_gene(result_path, tr_ex_int_df, gene_name, gene.result_path)
+    main()
