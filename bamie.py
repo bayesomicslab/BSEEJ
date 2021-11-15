@@ -874,7 +874,7 @@ class GENE(object):
 def main():
     # Model parameters
     max_n_iter = 1000
-    burn_in = 100
+    burn_in = 500
     convergence_checkpoint_interval = 50
     eta = 0.01
     alpha = 1
