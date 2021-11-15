@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import numba as nb
 import arviz as az
+import networkx as nx
 from numba import jit
 from os import listdir
-import networkx as nx
 from scipy.stats import beta as sci_beta
 from scipy.stats import dirichlet, multinomial
 from scipy.special import gammaln, xlogy
