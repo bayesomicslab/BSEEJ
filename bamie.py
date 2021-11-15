@@ -65,7 +65,6 @@ def compress_and_delete(jsonfilename):
         os.remove(jsonfilename)
 
 
-
 def get_lo(intersection_M):
     lo = np.zeros([intersection_M.shape[0], 1], dtype=int)
     # compute lo
@@ -140,14 +139,10 @@ def generate_interval_graph_nx(nodes_df, edges_list, intervalviz=True):
 
     for e in newedgesList:
         G.add_edge(*e)
-    # nx.draw_networkx(G, pos=None, arrows=False, with_labels=True, node_size= 50)
-    # plt.show() # display
     return G
 
 
 def split_training_test(document_orig, tr_percentage=95):
-    # split training and test
-    # tr_percentage = 95
     tr_size = int(tr_percentage / 100 * document_orig.shape[0])
     indices = np.random.RandomState(seed=2021).permutation(document_orig.shape[0])
     training_idx, test_idx = indices[:tr_size], indices[tr_size:]
@@ -196,7 +191,6 @@ def find_initial_nodes(nodes_df, N_K):
 
 
 def add_node_IS_Beta(S, gene_intersection, N_V, bet):
-    # add:
     free = set(range(N_V)) - set(S)
     for ss in S:
         neighbor_ss = set(np.where(gene_intersection[ss, :] == 1)[0])
@@ -225,8 +219,6 @@ def sample_local_ind_set(gene_intersection, N_V, N_S, b_k, Beta_k, MIS):
     trial = 0
     while len(random_clusters) < N_S and trial < max_trial:
         trial += 1
-        # add or remove:
-        # rnd = np.random.random()
         rnd = np.random.binomial(n=1, p=1 - (len(S) / MIS))
         if rnd >= 0.5:
             an = add_node_IS_Beta(S, gene_intersection, N_V, Beta_k)
@@ -314,12 +306,8 @@ def save_results(gene, model):
     result_df = pd.DataFrame(data=0, columns=['gene', 'trans_id', 'index', 'start', 'end', 'sample', 'FPKM'],
                              index=range(n_sample * effective_k * n_introns))
 
-    # result_df2 = pd.DataFrame(data=0, columns=['gene', 'trans_id', 'index', 'start', 'end', 'sample', 'FPKM'],
-    #                          index=range(n_sample*effective_k*n_introns))
-
     computeDF_vectorized(n_sample, effective_k, n_introns, result_df, gene_name, z_matrix, starts, ends)
 
-    # computeDF(n_sample,effective_k,n_introns,result_df2,gene_name,z_matrix,starts,ends)
 
     file_name_2 = 'bamie_' + gene_name + '_K_' + str(effective_k) + '.csv'
     result_df.to_csv(gene.result_path + '/' + file_name_2)
@@ -422,413 +410,6 @@ def read_run_info(path):
                 run_info = pickle.load(ifp)
 
     return run_info
-
-
-def compute_local_metrics(closest_tr, This_gene_tr_int_df, T_k):
-    T_t_df = This_gene_tr_int_df[This_gene_tr_int_df['transcript_id'] == closest_tr].reset_index()
-
-    T_t = sorted(list(set([(int(T_t_df.loc[i, 'start']), int(T_t_df.loc[i, 'end'])) for i in range(len(T_t_df))])))
-    local_FP = 0
-    local_TP = 0
-    local_FN = 0
-    for intron in T_k:
-
-        if any([isthesameintron(true_intron, intron) for true_intron in T_t]):
-            local_TP += 1
-        else:
-            local_FP += 1
-    for tr_intron in T_t:
-        if not any([isthesameintron(tr_intron, intr) for intr in T_k]):
-            local_FN += 1
-
-    precision = local_TP / (local_TP + local_FP)
-    recall = local_TP / (local_TP + local_FN)
-    if precision + recall != 0:
-
-        F1Score = (2 * precision * recall) / (precision + recall)
-    else:
-        F1Score = 0
-    return local_FP, local_TP, local_FN, precision, recall, F1Score
-
-
-def closest_transcript_eq2(T_k, This_gene_tr_int_df, this_sam_cl_res):
-
-    if 'FPKM' in this_sam_cl_res.columns.values:
-        col_name = 'FPKM'
-    else:
-        col_name = 'count'
-
-    this_cluter_introns_unique = T_k
-    This_gene_tr = list(set(This_gene_tr_int_df['transcript_id']))
-
-    phs_df = pd.DataFrame(data=0, columns=['tr_id', 'phs_score', 'tr_quant_unnorm', 'tr_quant_norm', 'n_introns'], index=range(len(This_gene_tr)))
-    t_k_df = pd.DataFrame(data=0, columns=['tr_id', 'tr_intron'] + [str(k) for k in T_k], index=range(len(This_gene_tr_int_df)))
-
-    tk_cc = 0
-    tr_score_list = []
-    for tr_id in range(len(This_gene_tr)):
-        tr = This_gene_tr[tr_id]
-
-        this_tr = This_gene_tr_int_df[This_gene_tr_int_df['transcript_id'] == tr]
-        this_tr_size = this_tr.groupby(['start', 'end']).size().reset_index()
-        this_tr_true_introns = [(int(this_tr_size.loc[i, 'start']), int(this_tr_size.loc[i, 'end'])) for i in range(len(this_tr_size))]
-
-        counter = 0
-        for intr_id in range(len(this_tr_true_introns)):
-            intr = this_tr_true_introns[intr_id]
-            t_k_df.loc[tk_cc, 'tr_id'] = tr
-            t_k_df.loc[tk_cc, 'tr_intron'] = str(intr)
-
-            for elem in this_cluter_introns_unique:
-                if isthesameintron(intr, elem):
-                    counter += 1
-                    t_k_df.loc[tk_cc, str(elem)] += 1
-            tk_cc += 1
-
-        phs_score = counter/len(this_cluter_introns_unique)
-
-        tr_score_list.append(phs_score)
-
-        phs_df.loc[tr_id, 'tr_id'] = tr
-        phs_df.loc[tr_id, 'phs_score'] = phs_score
-
-    quant_list = np.zeros([len(This_gene_tr)])
-    for elem in this_cluter_introns_unique:
-        elem_start = np.float(elem[0])
-        elem_end = np.float(elem[1])
-
-        fpkm = this_sam_cl_res[((this_sam_cl_res['start'] == elem_start) & (this_sam_cl_res['end'] == elem_end))][col_name].values[0]
-        if np.sum(t_k_df[str(elem)]) != 0:
-            unnorm_val = fpkm/np.sum(t_k_df[str(elem)])
-        else:
-            unnorm_val = 0
-
-        for tr_id in range(len(This_gene_tr)):
-            tr = This_gene_tr[tr_id]
-            this_elem_tr_quant = np.sum(t_k_df.loc[t_k_df['tr_id'] == tr, str(elem)]) * unnorm_val
-            quant_list[tr_id] += this_elem_tr_quant
-    n_introns = [len(t_k_df[t_k_df['tr_id'] == tr]) for tr in This_gene_tr]
-    quant_list_norm = quant_list/n_introns
-    phs_df['n_introns'] = n_introns
-    phs_df['tr_quant_unnorm'] = quant_list
-    phs_df['tr_quant_norm'] = quant_list_norm
-    max_id = np.argmax(tr_score_list)
-
-    return This_gene_tr[max_id], phs_df
-
-
-def closest_transcript_eq3(T_k, This_gene_tr_int_df, this_sam_cl_res):
-
-    if 'FPKM' in this_sam_cl_res.columns.values:
-        col_name = 'FPKM'
-    else:
-        col_name = 'count'
-
-    this_cluter_introns_unique = T_k
-    This_gene_tr = list(set(This_gene_tr_int_df['transcript_id']))
-
-    phs_df = pd.DataFrame(data=0, columns=['tr_id', 'phs_score', 'tr_quant_unnorm', 'tr_quant_norm', 'n_introns'], index=range(len(This_gene_tr)))
-    t_k_df = pd.DataFrame(data=0, columns=['tr_id', 'tr_intron'] + [str(k) for k in T_k], index=range(len(This_gene_tr_int_df)))
-
-    tk_cc = 0
-    tr_score_list = []
-    for tr_id in range(len(This_gene_tr)):
-        tr = This_gene_tr[tr_id]
-
-        this_tr = This_gene_tr_int_df[This_gene_tr_int_df['transcript_id'] == tr]
-        this_tr_size = this_tr.groupby(['start', 'end']).size().reset_index()
-        this_tr_true_introns = [(int(this_tr_size.loc[i, 'start']), int(this_tr_size.loc[i, 'end'])) for i in range(len(this_tr_size))]
-
-        counter = 0
-        for intr_id in range(len(this_tr_true_introns)):
-            intr = this_tr_true_introns[intr_id]
-            t_k_df.loc[tk_cc, 'tr_id'] = tr
-            t_k_df.loc[tk_cc, 'tr_intron'] = str(intr)
-
-            for elem in this_cluter_introns_unique:
-                if isthesameintron(intr, elem):
-                    counter += 1
-                    t_k_df.loc[tk_cc, str(elem)] += 1
-            tk_cc += 1
-
-        phs_score = counter/len(this_tr_true_introns)
-
-        tr_score_list.append(phs_score)
-
-        phs_df.loc[tr_id, 'tr_id'] = tr
-        phs_df.loc[tr_id, 'phs_score'] = phs_score
-
-    quant_list = np.zeros([len(This_gene_tr)])
-    for elem in this_cluter_introns_unique:
-        elem_start = np.float(elem[0])
-        elem_end = np.float(elem[1])
-
-        fpkm = this_sam_cl_res[((this_sam_cl_res['start'] == elem_start) & (this_sam_cl_res['end'] == elem_end))][col_name].values[0]
-        # unnorm_val = fpkm/np.sum(t_k_df[str(elem)])
-
-        if np.sum(t_k_df[str(elem)]) != 0:
-            unnorm_val = fpkm/np.sum(t_k_df[str(elem)])
-        else:
-            unnorm_val = 0
-
-        for tr_id in range(len(This_gene_tr)):
-            tr = This_gene_tr[tr_id]
-            this_elem_tr_quant = np.sum(t_k_df.loc[t_k_df['tr_id'] == tr, str(elem)]) * unnorm_val
-            quant_list[tr_id] += this_elem_tr_quant
-    n_introns = [len(t_k_df[t_k_df['tr_id'] == tr]) for tr in This_gene_tr]
-    quant_list_norm = quant_list/n_introns
-    phs_df['n_introns'] = n_introns
-    phs_df['tr_quant_unnorm'] = quant_list
-    phs_df['tr_quant_norm'] = quant_list_norm
-    max_id = np.argmax(tr_score_list)
-
-    return This_gene_tr[max_id], phs_df
-
-
-def isintronintrans(tr, intron, This_gene_tr_int_df):
-    this_tr = This_gene_tr_int_df[This_gene_tr_int_df['transcript_id'] == tr]
-    this_tr_size = this_tr.groupby(['start', 'end']).size().reset_index()
-    this_tr_true_introns = [(int(this_tr_size.loc[i, 'start']), int(this_tr_size.loc[i, 'end'])) for i in
-                            range(len(this_tr_size))]
-    start = intron[0]
-    end = intron[1]
-    start_match_list = [np.abs(elem[0] - start) <= 6 for elem in this_tr_true_introns]
-    end_match_list = [np.abs(elem[1] - end) <= 6 for elem in this_tr_true_introns]
-    same_int_list = [a and b for a, b in zip(start_match_list, end_match_list)]
-    same_int_idx = [i for i, x in enumerate(same_int_list) if x]
-    return len(same_int_idx) > 0
-
-
-def isthesameintron(int1, int2):
-    s1, e1 = int1
-    s2, e2 = int2
-    return np.abs(s1 - s2) <= 6 and np.abs(e1 - e2) <= 6
-
-
-def filter_results_by_expression(gene_result_path, threshold=10, cut_off_threshold=10):
-    bamie_raw = pd.read_csv(gene_result_path, index_col=0)
-    bamie_raw_no_zero = bamie_raw[bamie_raw['FPKM'] != 0]
-    bamie_raw_th1_df = bamie_raw_no_zero.groupby(['sample', 'trans_id'])['FPKM'].agg('sum').reset_index()
-    bamie_raw_th1_df2 = bamie_raw_th1_df[bamie_raw_th1_df['FPKM'] > threshold]
-    expressed_sample_clusters = list(zip(bamie_raw_th1_df2['sample'], bamie_raw_th1_df2['trans_id']))
-    bamie_raw_th1_df3 = bamie_raw_th1_df2.groupby(['trans_id']).size().reset_index()
-    expressed_clusters = list(bamie_raw_th1_df3[bamie_raw_th1_df3[0] > cut_off_threshold]['trans_id'])
-    final_expression = [elem for elem in expressed_sample_clusters if elem[1] in expressed_clusters]
-    final_expression2 = [(i, j) for (j, i) in final_expression]
-    filtered_results = bamie_raw_no_zero[bamie_raw_no_zero[['trans_id', 'sample']].apply(tuple, axis=1).isin(final_expression2)].reset_index()
-    return filtered_results
-
-
-def compute_gene_metrics_bamie(tr_ex_int_df, cuff_res_path, this_gene, save_path, file_pattern_name):
-
-    This_gene_tr_int_df = tr_ex_int_df[tr_ex_int_df['gene'] == this_gene].reset_index()
-    method = 'BAMIE'
-    # filtering by expression
-    cuff_res = filter_results_by_expression(cuff_res_path, threshold=10, cut_off_threshold=10)
-
-
-    samples = sorted(list(set(cuff_res['sample'])))
-    n_tr = len(set(This_gene_tr_int_df['transcript_id']))
-
-    cuff_intr_g = cuff_res.groupby(['start', 'end']).size().reset_index()
-    computed_introns = sorted(
-        [(int(cuff_intr_g.loc[i, 'start']), int(cuff_intr_g.loc[i, 'end'])) for i in range(len(cuff_intr_g))])
-
-    true_introns_g = This_gene_tr_int_df.groupby(['start', 'end']).size().reset_index()
-    true_introns = sorted([(int(true_introns_g.loc[i, 'start']), int(true_introns_g.loc[i, 'end'])) for i in
-                           range(len(true_introns_g))])
-
-    matching_df = pd.DataFrame(data=0, columns=[str(i) for i in true_introns],
-                               index=[str(j) for j in computed_introns])
-    for tc in computed_introns:
-        for tt in true_introns:
-            matching_df.loc[str(tc), str(tt)] = int(isthesameintron(tc, tt))
-
-    all_clusters = sorted(list(set(cuff_res['trans_id'])))
-    transcripts = sorted(list(set(This_gene_tr_int_df['transcript_id'])))
-
-    phs_score_df_eq2 = pd.DataFrame(data=0, columns=transcripts, index=all_clusters)
-    phs_score_df_eq3 = pd.DataFrame(data=0, columns=transcripts, index=all_clusters)
-
-    closest_eq2, closest_eq3 = {}, {}
-    # print(all_clusters)
-    for cl in all_clusters:
-
-        clusters_2 = cuff_res[cuff_res['trans_id'] == cl]
-        clusters2_g = clusters_2.groupby(['start', 'end']).size().reset_index()
-        clusters_introns = sorted(
-            list(set([(int(clusters2_g.loc[i, 'start']), int(clusters2_g.loc[i, 'end'])) for i in range(len(clusters2_g))])))
-        trans_scores_eq2 = []
-        trans_scores_eq3 = []
-
-        for trans in transcripts:
-
-            trans_2 = This_gene_tr_int_df[This_gene_tr_int_df['transcript_id'] == trans]
-            trans_2g = trans_2.groupby(['start', 'end']).size().reset_index()
-            this_trans_introns = sorted(list(set([(int(trans_2g.loc[i, 'start']), int(trans_2g.loc[i, 'end'])) for i in range(len(trans_2g))])))
-
-            counter = 0
-
-            for tr_intr in this_trans_introns:
-                for cl_intr in clusters_introns:
-                    if isthesameintron(cl_intr, tr_intr) == 1:
-                        counter += 1
-                        break
-
-                    counter += matching_df.loc[str(cl_intr), str(tr_intr)]
-
-            trans_scores_eq2.append((counter / len(clusters_introns)))
-            trans_scores_eq3.append((counter / len(this_trans_introns)))
-            phs_score_df_eq2.loc[cl, trans] = counter / len(clusters_introns)
-            phs_score_df_eq3.loc[cl, trans] = counter / len(this_trans_introns)
-
-        max_id_eq2 = np.argmax(trans_scores_eq2)
-        max_id_eq3 = np.argmax(trans_scores_eq3)
-        closest_eq2[cl] = transcripts[max_id_eq2]
-        closest_eq3[cl] = transcripts[max_id_eq3]
-
-
-    local_metric_df_FP = pd.DataFrame(data=0, columns=transcripts, index=all_clusters)
-    local_metric_df_TP = pd.DataFrame(data=0, columns=transcripts, index=all_clusters)
-    local_metric_df_FN = pd.DataFrame(data=0, columns=transcripts, index=all_clusters)
-    local_metric_df_precision = pd.DataFrame(data=0, columns=transcripts, index=all_clusters)
-    local_metric_df_recall = pd.DataFrame(data=0, columns=transcripts, index=all_clusters)
-    local_metric_df_f1score = pd.DataFrame(data=0, columns=transcripts, index=all_clusters)
-    logical_cl_tra_eq2 = pd.DataFrame(data=-1, columns=transcripts, index=all_clusters)
-    logical_cl_tra_eq3 = pd.DataFrame(data=-1, columns=transcripts, index=all_clusters)
-
-    for cl in all_clusters:
-        clusters_2 = cuff_res[cuff_res['trans_id'] == cl]
-        clusters2_g = clusters_2.groupby(['start', 'end']).size().reset_index()
-        clusters_introns = sorted(
-            [(int(clusters2_g.loc[i, 'start']), int(clusters2_g.loc[i, 'end'])) for i in range(len(clusters2_g))])
-
-        for trans in transcripts:
-            local_FP, local_TP, local_FN, precision, recall, F1Score = compute_local_metrics(trans,
-                                                                                             This_gene_tr_int_df,
-                                                                                             clusters_introns)
-            local_metric_df_FP.loc[cl, trans] = local_FP
-            local_metric_df_TP.loc[cl, trans] = local_TP
-            local_metric_df_FN.loc[cl, trans] = local_FN
-            local_metric_df_precision.loc[cl, trans] = precision
-            local_metric_df_recall.loc[cl, trans] = recall
-            local_metric_df_f1score.loc[cl, trans] = F1Score
-            logical_cl_tra_eq2.loc[cl, trans] = int(closest_eq2[cl] == trans)
-            logical_cl_tra_eq3.loc[cl, trans] = int(closest_eq3[cl] == trans)
-
-
-    cuff_res_df_agg = cuff_res.sort_values(['trans_id'], ascending=True).groupby(['trans_id'])['sample'].apply(set)
-    sam_cl_count = np.sum([len(cuff_res_df_agg.loc[i]) for i in list(cuff_res_df_agg.index)])
-
-    gene_phs_results = pd.DataFrame(columns=['method', 'gene', 'sample', 'cluster', 'equation', 'tr_id',
-                                             'phs_score', 'quant',
-                                             'quant_norm', 'FP', 'TP', 'FN', 'precision', 'recall', 'F1Score',
-                                             'closest'])
-
-    # cc = 0
-    for cl in list(cuff_res_df_agg.index):
-        for tra in transcripts:
-            fp = local_metric_df_FP.loc[cl, tra]
-            tp = local_metric_df_TP.loc[cl, tra]
-            fn = local_metric_df_FN.loc[cl, tra]
-            prec = local_metric_df_precision.loc[cl, tra]
-            reca = local_metric_df_recall.loc[cl, tra]
-            fscore = local_metric_df_f1score.loc[cl, tra]
-            phs_2 = phs_score_df_eq2.loc[cl, tra]
-            phs_3 = phs_score_df_eq3.loc[cl, tra]
-
-
-            this_np_eq2 = np.array(
-                [method, this_gene, -1, cl, 2, tra, phs_2, 0, 0, fp, tp, fn, prec, reca, fscore,
-                 logical_cl_tra_eq2.loc[cl, tra]])
-            this_np_eq2_tiled = np.tile(this_np_eq2, (len(cuff_res_df_agg.loc[cl]), 1))
-            this_np_eq2_tiled[:, 3] = np.array(list(cuff_res_df_agg.loc[cl])).reshape(1, len(cuff_res_df_agg.loc[cl]))
-
-            this_np_eq3 = np.array(
-                [method, this_gene, -1, cl, 3, tra, phs_3, 0, 0, fp, tp, fn, prec, reca, fscore,
-                 logical_cl_tra_eq3.loc[cl, tra]])
-            this_np_eq3_tiled = np.tile(this_np_eq3, (len(cuff_res_df_agg.loc[cl]), 1))
-            this_np_eq3_tiled[:, 3] = np.array(list(cuff_res_df_agg.loc[cl])).reshape(1, len(cuff_res_df_agg.loc[cl]))
-
-            this_comb_np = np.concatenate((this_np_eq2_tiled, this_np_eq3_tiled), axis=0)
-
-            this_comb_pandas = pd.DataFrame(data=this_comb_np,
-                                            columns=['method', 'gene', 'sample', 'cluster', 'equation',
-                                                     'tr_id', 'phs_score', 'quant',
-                                                     'quant_norm', 'FP', 'TP', 'FN', 'precision', 'recall', 'F1Score',
-                                                     'closest'], index=range(this_comb_np.shape[0]))
-
-            gene_phs_results = gene_phs_results.append(this_comb_pandas, ignore_index=True)
-
-            gene_phs_results = gene_phs_results.sort_values(['sample', 'cluster', 'tr_id', 'equation'], ascending=True)
-
-            gene_phs_results = gene_phs_results.astype({'sample': int, 'equation': int, 'phs_score': float,
-                                                        'quant': float, 'quant_norm': float, 'FP': int, 'TP': int,
-                                                        'FN': int, 'precision': float, 'recall': float,
-                                                        'F1Score': float, 'closest': int})
-
-    file_name = file_pattern_name + '_per_sample.csv'
-    gene_phs_results.to_csv(os.path.join(save_path, file_name))
-    print(os.path.join(save_path, file_name), 'saved.')
-
-    eq2_results = gene_phs_results[gene_phs_results['equation'] == 2].reset_index()
-    eq2_results = eq2_results[eq2_results['closest'] == 1]
-    eq3_results = gene_phs_results[gene_phs_results['equation'] == 3].reset_index()
-    eq3_results = eq3_results[eq3_results['closest'] == 1]
-
-    FP2 = np.mean(eq2_results['FP'])
-    TP2 = np.mean(eq2_results['TP'])
-    FN2 = np.mean(eq2_results['FN'])
-    precision2 = np.mean(eq2_results['precision'])
-    recall2 = np.mean(eq2_results['recall'])
-    F1Score2 = np.mean(eq2_results['F1Score'])
-    phs_score2 = np.mean(eq2_results['phs_score'])
-    quant2 = np.mean(eq2_results['quant'])
-
-    FP3 = np.mean(eq3_results['FP'])
-    TP3 = np.mean(eq3_results['TP'])
-    FN3 = np.mean(eq3_results['FN'])
-    precision3 = np.mean(eq3_results['precision'])
-    recall3 = np.mean(eq3_results['recall'])
-    F1Score3 = np.mean(eq3_results['F1Score'])
-    phs_score3 = np.mean(eq3_results['phs_score'])
-    quant3 = np.mean(eq3_results['quant'])
-
-    return FP2, TP2, FN2, precision2, recall2, F1Score2, phs_score2, quant2, FP3, TP3, FN3, precision3, recall3, \
-           F1Score3, phs_score3, quant3
-
-
-def evaluate_gene(gene_results_path, tr_ex_int_df, gene_name, save_path):
-
-    file_pattern_name = gene_name + '_results'
-    meth = 'BAMIE'
-    n_row = 16
-    meth_cov_df = pd.DataFrame(data=0, columns=['method', 'gene', 'equation', 'metric', 'value'],
-                               index=range(n_row))
-
-    FP2, TP2, FN2, precision2, recall2, F1Score2, phs_score2, quant2, FP3, TP3, FN3, precision3, recall3, F1Score3, \
-    phs_score3, quant3 = compute_gene_metrics_bamie(tr_ex_int_df, gene_results_path, gene_name, save_path, file_pattern_name)
-
-    meth_cov_df.iloc[0, :] = meth, gene_name, 2, 'FP', FP2
-    meth_cov_df.iloc[1, :] = meth, gene_name, 2, 'TP', TP2
-    meth_cov_df.iloc[2, :] = meth, gene_name, 2, 'FN', FN2
-    meth_cov_df.iloc[3, :] = meth, gene_name, 2, 'precision', precision2
-    meth_cov_df.iloc[4, :] = meth, gene_name, 2, 'recall', recall2
-    meth_cov_df.iloc[5, :] = meth, gene_name, 2, 'F1Score', F1Score2
-    meth_cov_df.iloc[6, :] = meth, gene_name, 2, 'phs_score', phs_score2
-    meth_cov_df.iloc[7, :] = meth, gene_name, 2, 'quant', quant2
-
-    meth_cov_df.iloc[8, :] = meth, gene_name, 3, 'FP', FP3
-    meth_cov_df.iloc[9, :] = meth, gene_name, 3, 'TP', TP3
-    meth_cov_df.iloc[10, :] = meth, gene_name, 3, 'FN', FN3
-    meth_cov_df.iloc[11, :] = meth, gene_name, 3, 'precision', precision3
-    meth_cov_df.iloc[12, :] = meth, gene_name, 3, 'recall', recall3
-    meth_cov_df.iloc[13, :] = meth, gene_name, 3, 'F1Score', F1Score3
-    meth_cov_df.iloc[14, :] = meth, gene_name, 3, 'phs_score', phs_score3
-    meth_cov_df.iloc[15, :] = meth, gene_name, 3, 'quant', quant3
-
-    meth_cov_df.to_csv(os.path.join(save_path, file_pattern_name + '_overall.csv'))
-    print(os.path.join(save_path, file_pattern_name + '_overall.csv file saved.'))
 
 
 class MODEL(object):
@@ -1056,7 +637,7 @@ class MODEL(object):
             temp_b = np.array([v + self.epsilon if v == 0 else v for v in list(self.b[k, :])])
             self.beta[k, :] = np.random.dirichlet(temp_b * self.eta + np.sum(self.z[:, :, k], axis=0))
 
-    def update_run_info(self, t, gg):
+    def update_run_info(self, t, gg, burn_in):
         self.run_info['gibbs'][t]['Theta'] = deepcopy(self.theta)
         self.run_info['gibbs'][t]['Beta'] = deepcopy(self.beta)
         self.run_info['gibbs'][t]['b'] = deepcopy(self.b)
@@ -1106,7 +687,7 @@ class MODEL(object):
 
             self.update_beta()
 
-            self.update_run_info(it, gene)
+            self.update_run_info(it, gene, burn_in)
 
             if it >= burn_in and it % convergence_checkpoint_interval == 0 and not self.converged:
 
@@ -1236,7 +817,6 @@ class GENE(object):
 
     def get_document(self):  # preprocess_gene_opt
         junc_files_list = listdir(self.junc_path)
-        # gene_word_dict = {}
         gene_word_dict = {self.name: {}}
         samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
         valid_samples = []
@@ -1308,9 +888,6 @@ def main():
     r = 1
     s = 1
 
-    # Read the reference file for simulated data
-    tr_ex_int_df = pd.read_csv(path_to_reference_file, index_col=0)
-
     # Read gene junction files
     with zipfile.ZipFile(os.path.join(main_path, gene_name)+'.zip', 'r') as zip_ref:
         zip_ref.extractall(main_path)
@@ -1329,10 +906,7 @@ def main():
                 convergence_checkpoint_interval=convergence_checkpoint_interval, verbose=True)
 
     # Save all the results, including all the parameters in the model in a pickle file and clusters
-    result_path = save_results(gene, model)
-
-    # Evaluate the results
-    evaluate_gene(result_path, tr_ex_int_df, gene_name, gene.result_path)
+    _ = save_results(gene, model)
 
 
 if __name__ == '__main__':
@@ -1340,7 +914,7 @@ if __name__ == '__main__':
     if '-k' in sys.argv:
         n_k = int(sys.argv[sys.argv.index('-k') + 1])
     else:
-        n_k = 16
+        n_k = 3
 
     if '-a' in sys.argv:
         main_path = sys.argv[sys.argv.index('-a') + 1]
@@ -1351,10 +925,5 @@ if __name__ == '__main__':
         gene_name = sys.argv[sys.argv.index('-g') + 1]
     else:
         gene_name = 'A2ML1'
-
-    if '-r' in sys.argv:
-        path_to_reference_file = sys.argv[sys.argv.index('-r') + 1]
-    else:
-        path_to_reference_file = 'reference_simulated_data.csv'
 
     main()
