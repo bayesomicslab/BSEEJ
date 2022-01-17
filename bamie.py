@@ -13,7 +13,7 @@ from copy import deepcopy
 from collections import Counter
 
 
-def computeDF(n_sample,effective_k,n_introns,result_df,gene_name,z_matrix,starts,ends):
+def computeDF(n_sample, effective_k,n_introns,result_df,gene_name,z_matrix,starts,ends):
     counter = 0
     for sample_id in range(n_sample):
         for cl in range(effective_k):
