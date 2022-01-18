@@ -48,7 +48,7 @@ python3 bamie.py -k clusters_no -i max iteration  -eta eta hyper parameter -alph
 ## Prepare the input:
 
 #### [STAR](https://code.google.com/archive/p/rna-star/)
-For creating the EGA and simulated data BAM files we ran the [STAR](https://academic.oup.com/bioinformatics/article/29/1/15/272537)[1] aligner for fast and accurate alignment. 
+For creating the EGA and simulated data BAM files we ran the [STAR](https://academic.oup.com/bioinformatics/article/29/1/15/272537) [1] aligner for fast and accurate alignment. 
 ```sh
 STAR --runThreadN 20 --genomeDir ../genome_data/genome_index/ --outFileNamePrefix ./person_${i}_ --twopassMode  Basic --outSAMstrandField intronMotif --outSAMtype BAM SortedByCoordinate  --readFilesIn ${1}/person_${i}_1.fa ${1}/person_${i}_2.fa
 ```
@@ -58,7 +58,7 @@ This allows us to use the twopassMode and we also used the intronMotif in order 
 Once the files have been aligned they are then separated out into the individual bam files of just one gene to work on at a time.
 
 #### [Regtools](https://regtools.readthedocs.io/en/latest/)
-[Regtools](https://www.biorxiv.org/content/biorxiv/early/2021/01/05/436634.full.pdf)[2] was used for an efficient filtering of the junctions.
+[Regtools](https://www.biorxiv.org/content/biorxiv/early/2021/01/05/436634.full.pdf) [2] was used for an efficient filtering of the junctions.
 ```sh
 regtools junctions extract -s 0 -a 6 -m 50 -M 500000 %s -o %s.junc  
 ```
@@ -76,7 +76,7 @@ On all data used in this project, EGA, Geuvadis, and simulations, we used the fo
 portcullis prep -t 20 -v --force -o %s_portcullis/1-prep/ GRCh38.primary_assembly.genome.fa %s/%s.bam
 ```
 
-First step of [portcullis](https://academic.oup.com/gigascience/article/7/12/giy131/5173486)[3] is prep and it takes in the fasta file from the reference genome used, here is an example from the data simulations.
+First step of [portcullis](https://academic.oup.com/gigascience/article/7/12/giy131/5173486) [3] is prep and it takes in the fasta file from the reference genome used, here is an example from the data simulations.
 It is important to note that portcullis was run on our simulations and both experimental results.
 Here \%s is there name of the folder to direct output to and the bam file name.
 ```sh
