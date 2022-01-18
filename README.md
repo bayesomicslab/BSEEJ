@@ -26,4 +26,4 @@ python3 bamie.py
 ```
 
 ## Model Parameters
-<img src="./docs/model.png" width="300"> **BAMIE **
+<img src="./docs/model.png" width="500"> **BAMIE **
