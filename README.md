@@ -20,8 +20,10 @@ cd BAMIE
 pip install -r requirements.txt
 ```
 
-3. Start the application:
+3. Run the code:
 ```sh
 python3 bamie.py
 ```
 
+## Model Parameters
+<img src="./docs/model.png" width="200"> **BAMIE **
