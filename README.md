@@ -36,7 +36,7 @@ Main variables include:
 * &eta;
 * r, s are priors for &pi; Beta distribution:
 
-![](https://latex.codecogs.com/gif.latex?%5Clarge%20%5Cpi_k%20%5Csim%20Beta%28r%2Cs%29%2C%20%5Cforall%20k%3D%5C%7B1%2C%20%5Cdots%2C%20K%5C%7D)
+![](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cpi_k%20%5Csim%20Beta%28r%2Cs%29%2C%20%5Cforall%20k%3D%5C%7B1%2C%20%5Cdots%2C%20K%5C%7D)
 
 * V is the set of unique intron excisions, indexed by v and its size of denoted by |V|.
 * N is the number of samples and are indexed by i.
