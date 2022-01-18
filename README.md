@@ -106,7 +106,7 @@ After portcullis is complete we do an overlap check between the junctions found 
 <img src="./docs/model.png" width="900"> 
 <br/><br/>
 
-Main variables and parameters include:
+Main **variables and parameters** include:
 * V is the set of unique intron excisions, indexed by v and its size of denoted by |V|.
 * N is the number of samples and are indexed by i.
 * J<sub>i</sub> is the number of intron excisions in i<sup>th</sup> sample. 
