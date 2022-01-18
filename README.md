@@ -1,11 +1,15 @@
 # Bayesian Reconstruction and Differential Testing of Intron Excision Sequences (BAMIE)
-BAMIE code is provided in 'bamie.py' file.
+
+*Authors:* <br/>
+Marjan Hosseini<br/>
+Devin J. McConnell<br/>
+Derek Aguiar
+
+The code for BAMIE method is provided in 'bamie.py' file.
 The junction files for one gene (A2ML1) is added in the github.
+To run BAMIE with default configurations, simply run the requirements.txt.
+Then run 'bamie.py'. More detailed guide is the follow. 
 
-To run BAMIE with default configurations, run the requirements.txt.
-Then run 'bamie.py'.
-
-Change the model parameters in 'bamie.py' if needed. 
 
 
 ## Usage
@@ -25,6 +29,76 @@ pip install -r requirements.txt
 python3 bamie.py
 ```
 
+Or alternatively for changing model parameters or training other genes run:
+ 
+```sh
+python3 bamie.py -k clusters_no -i max iteration  -eta eta hyper parameter -alpha alpha hyper-parameter -r r -s s -a path -g gene
+```
+    - clusters_no: number of clusters, this number should be larger than the number of minimum node cover of the interval graph of the intron excisions
+    - max iteration: the maximum number of iterations for the Gibbs updates
+    - eta corresponds to eta hyper-parameter (See the model section)  
+    - alpha corresponds to alpha hyper-parameter (See the model section)  
+    - r corresponds to r hyper-parameter (See the model section)  
+    - s corresponds to s hyper-parameter (See the model section) 
+    - path is the relative or full path to the folder that contains the genes samples junctions reads as a zip file. Here one gene (A2ML1.zip) has been uploaded for example to be run and the path to it is the default path.
+    - gene: the name of the gene (Here by default, gene is A2ML1).
+
+
+
+## Prepare the input:
+
+#### STAR
+For creating the EGA and simulated data BAM files we ran the STAR aligner for fast and accurate alignment. 
+```sh
+STAR --runThreadN 20 --genomeDir ../genome_data/genome_index/ --outFileNamePrefix ./person_${i}_ --twopassMode  Basic --outSAMstrandField intronMotif --outSAMtype BAM SortedByCoordinate  --readFilesIn ${1}/person_${i}_1.fa ${1}/person_${i}_2.fa
+```
+In this example $\${1}$ is the directory where the files are located. 
+The input file 'person\_*\_1.fa' is a collection of genes for the ith sample on forward sequence and the second is the collection of genes on the backward sequence.
+This allows us to use the twopassMode and we also used the intronMotif in order to obtain spliced alignments (XS).
+Once the files have been aligned they are then separated out into the individual bam files of just one gene to work on at a time.
+
+#### Regtools
+Regtools was used for an efficient filtering of the junctions.
+```sh
+regtools junctions extract -s 0 -a 6 -m 50 -M 500000 %s -o %s.junc  
+```
+Here the two \%s are the bam file and output name respectively.
+On all data used in this project, EGA, Geuvadis, and simulations, we used the following flags:
+
+    * -s: finds XS/unstranded flags
+    * -a: minimum anchor length into exon (6 bp)
+    * -m: minimum intron size (50 bp)
+    * -M: Maximum intron size (500000 bp)
+
+
+#### portcullis
+```sh
+portcullis prep -t 20 -v --force -o %s_portcullis/1-prep/ GRCh38.primary_assembly.genome.fa %s/%s.bam
+```
+
+First step of portcullis is prep and it takes in the fasta file from the reference genome used, here is an example from the data simulations.
+It is important to note that portcullis was run on our simulations and both experimental results.
+Here \%s is there name of the folder to direct output to and the bam file name.
+```sh
+portcullis junc -t 20 -v -o %s_portcullis/2-junc/portcullis_all --intron_gff %s_portcullis/1-prep/    
+```
+
+The next step that is being done is extraction of the junctions into a gff format. 
+Here \%s is just giving it the name of the folder to look into.
+
+```sh
+portcullis filt -t 20 -v -n --max_length 500000 --min_cov 30 -o %s_portcullis/3-filt/portcullis_filtered --intron_gff %s_portcullis/1-prep/ %s_portcullis/2-junc/portcullis_all.junctions.tab
+```
+Finally, we set some filtering using portcullis. 
+We only keep introns that have a max length of 500000, do not use the machine learning filtering, and have a minimum coverage of 30.
+Here again \%s is just point to the gene folder to look into for the files.
+After portcullis is complete we do an overlap check between the junctions found from regtools and portcullis and only keep the ones that overlap with at least 90%.
+
+
+
+
+
+
 ## Model:
 **BAMIE Probabilistic Graphical Model** <img src="./docs/model.png" width="500"> 
 
@@ -42,10 +116,8 @@ Main variables and parameters include:
 ![](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cpi_k%20%5Csim%20Beta%28r%2Cs%29%2C%20%5Cforall%20k%3D%5C%7B1%2C%20%5Cdots%2C%20K%5C%7D)
     * Increase in mean of Beta(r,s) results in increase in cluster size |SIE|.
 
-
 * The structure of a (clusters) SIEs consists of the inclusion or exclusion of intron excisions.  
 ![](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cbegin%7Balign*%7D%20b_%7Bkv%7D%20%26%20%5Csim%20Bernoulli%28%5Cpi_k%29%2C%20%5Cforall%20v%5Cin%20C%20%5C%5C%20s.t.%20%26%20%5Chspace%7B20pt%7D%20%7Bb_%7Bk%5Ccdot%7D%7D%20%5Cin%20%5COmega%20%5Cend%7Balign*%7D)
-
 
 * For cluster k, &\beta;<sub>k</sub> is a |V|-dimensional Dirichlet which represents the distribution of the cluster k over the intron excisions.
 ![](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cbeta_k%20%5Csim%20Dirichlet_%7B%7CV%7C%7D%28%7B%5Ceta%7D%20%5Codot%20%7Bb_%7Bk%7D%7D%29)
