@@ -5,18 +5,18 @@ Marjan Hosseini<br/>
 Devin J. McConnell<br/>
 Derek Aguiar
 
-The code for BAMIE method is provided in 'bamie.py' file.
+The code for BREM method is provided in 'brem.py' file.
 The junction files for one gene (A2ML1) is added in the github.
-To run BAMIE with default configurations, simply run the requirements.txt.
-Then run 'bamie.py'. More detailed guide is the follow. 
+To run BREM with default configurations, simply run the requirements.txt.
+Then run 'brem.py'. More detailed guide is the follow. 
 
 
 
 ## Usage
 1. Clone the repository:
 ```sh
-git clone https://github.com/aguiarlab/BAMIE.git
-cd BAMIE
+git clone https://github.com/aguiarlab/BREM.git
+cd BREM
 ```
 
 2. Install the project dependencies:
@@ -26,13 +26,13 @@ pip install -r requirements.txt
 
 3. Run the code:
 ```sh
-python3 bamie.py
+python3 brem.py
 ```
 
 Or alternatively for changing model parameters or training other genes run:
  
 ```sh
-python3 bamie.py -k clusters_no -i max iteration  -eta eta hyper parameter -alpha alpha hyper-parameter -r r -s s -a path -g gene
+python3 brem.py -k clusters_no -i max iteration  -eta eta hyper parameter -alpha alpha hyper-parameter -r r -s s -a path -g gene
 ```
     - clusters_no: number of clusters, this number should be larger than the number of minimum node cover of the interval graph of the intron excisions
     - max iteration: the maximum number of iterations for the Gibbs updates
@@ -101,7 +101,7 @@ After portcullis is complete we do an overlap check between the junctions found 
 
 ## Model:
 
-**BAMIE Probabilistic Graphical Model** 
+**BREM Probabilistic Graphical Model** 
 <br/><br/>
 <img src="./docs/model.png" width="900"> 
 <br/><br/>
