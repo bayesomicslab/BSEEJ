@@ -303,7 +303,7 @@ def save_results(gene, model):
     computeDF_vectorized(n_sample, effective_k, n_introns, result_df, gene_name, z_matrix, starts, ends)
 
 
-    file_name_2 = 'bamie_' + gene_name + '_K_' + str(effective_k) + '.csv'
+    file_name_2 = 'brem_' + gene_name + '_K_' + str(effective_k) + '.csv'
     result_df.to_csv(gene.result_path + '/' + file_name_2)
     print(gene.result_path + '/' + file_name_2, 'saved.')
     return gene.result_path + '/' + file_name_2
