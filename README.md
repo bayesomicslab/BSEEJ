@@ -1,4 +1,4 @@
-# Bayesian Reconstruction and Differential Testing of Intron Excision Sequences (BAMIE)
+# **B**ayesian **r**econstruction of **e**xcised **m**RNA (BREM)
 
 *Authors:* <br/>
 Marjan Hosseini<br/>
