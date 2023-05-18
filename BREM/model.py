@@ -1,3 +1,13 @@
+import time
+
+import arviz as az
+from scipy.special import gammaln, xlogy
+from scipy.stats import beta as sci_beta
+from scipy.stats import dirichlet, multinomial
+
+from utilities import *
+
+
 class Model(object):
     
     def __init__(self, eta, alpha, epsilon, r, s):
@@ -14,46 +24,46 @@ class Model(object):
     
     def initialize_vars(self, gene, n_k):
         self.init_nodes = find_initial_nodes(gene.nodes_df, n_k)
-        Z_matrix = np.zeros([gene.n_d, gene.n_v, n_k], dtype=int)
+        z_matrix = np.zeros([gene.n_d, gene.n_v, n_k], dtype=int)
         for doc in range(0, gene.n_d):
             for v in range(0, gene.n_v):
                 tempz = np.random.randint(0, n_k, size=gene.document[doc, v])
                 for k in range(0, n_k):
-                    Z_matrix[doc, v, k] = np.count_nonzero(tempz == k)
-        
-        self.z_init = Z_matrix
-        
-        # Theta: distribution of the samples over clusters
-        Theta = np.zeros([gene.n_d, n_k])
-        
+                    z_matrix[doc, v, k] = np.count_nonzero(tempz == k)
+    
+        self.z_init = z_matrix
+    
+        # theta: distribution of the samples over clusters
+        theta = np.zeros([gene.n_d, n_k])
+    
         for i in range(gene.n_d):
             temp_dir = np.array([np.nan])
             while np.isnan(sum(temp_dir)):
                 temp_dir = np.random.dirichlet(self.alpha * np.ones(n_k))
-            Theta[i] = temp_dir
-        
+            theta[i] = temp_dir
+    
         # pi: distribution initialization
         pi = np.random.beta(self.r, self.s, size=n_k)
-        
+    
         # b: distribution initialization
         b = np.zeros([n_k, gene.n_v], dtype=int)
         for k in range(n_k):
             init = [int(node) for node in self.init_nodes[k]]
             b[k, init] = 1
-        
-        # Beta: distribution of the Clusters over intron excisions
-        Beta = np.zeros([n_k, gene.n_v])
+    
+        # beta: distribution of the Clusters over intron excisions
+        beta = np.zeros([n_k, gene.n_v])
         for k in range(n_k):
             temp_dirb = np.array([np.nan])
             while np.isnan(sum(temp_dirb)):
                 temp_dirb = np.random.dirichlet(self.eta * np.ones(gene.n_v))
-            Beta[k, :] = temp_dirb
-        
-        Beta[Beta < self.epsilon] = self.epsilon
-        
-        self.z = Z_matrix
-        self.beta = Beta
-        self.theta = Theta
+            beta[k, :] = temp_dirb
+    
+        beta[beta < self.epsilon] = self.epsilon
+    
+        self.z = z_matrix
+        self.beta = beta
+        self.theta = theta
         self.pi = pi
         self.b = b
         self.converged = False
@@ -105,35 +115,34 @@ class Model(object):
         return conv
     
     def log_likelihood(self):
-        N_D = self.z.shape[0]
-        N_V = self.z.shape[1]
-        N_K = self.z.shape[2]
+        n_d = self.z.shape[0]
+        n_v = self.z.shape[1]
+        n_k = self.z.shape[2]
         
         beta_rel = self.beta > self.epsilon
         beta_rel = beta_rel.T
-        bet = np.repeat(beta_rel[np.newaxis, :, :], N_D, axis=0)
+        bet = np.repeat(beta_rel[np.newaxis, :, :], n_d, axis=0)
         rel_dim = bet * (self.z > self.epsilon)
-        Z_matrix_new = self.z.swapaxes(1, 2).reshape(N_D * N_K, N_V)
+        z_matrix_new = self.z.swapaxes(1, 2).reshape(n_d * n_k, n_v)
         
-        rel_dim_new = rel_dim.swapaxes(1, 2).reshape(N_D * N_K, N_V)
+        rel_dim_new = rel_dim.swapaxes(1, 2).reshape(n_d * n_k, n_v)
         
-        A = Z_matrix_new * rel_dim_new
-        Z_cut = A[~np.all(A == 0, axis=1)]
-        Beta_rep = np.repeat(self.beta[np.newaxis, :, :], N_D, axis=0).reshape(N_D * N_K, N_V)
-        Beta_relevant = Beta_rep * rel_dim_new
-        Beta_cut = Beta_relevant[~np.all(A == 0, axis=1)]
-        Beta_cut = Beta_cut / (np.sum(Beta_cut, axis=1).reshape(-1, 1))  # normalize
-        multinomial_pmf = gammaln(np.sum(Z_cut, axis=1) + 1) + np.sum(xlogy(Z_cut, Beta_cut) - gammaln(Z_cut + 1),
+        aa = z_matrix_new * rel_dim_new
+        z_cut = aa[~np.all(aa == 0, axis=1)]
+        beta_rep = np.repeat(self.beta[np.newaxis, :, :], n_d, axis=0).reshape(n_d * n_k, n_v)
+        beta_relevant = beta_rep * rel_dim_new
+        beta_cut = beta_relevant[~np.all(aa == 0, axis=1)]
+        beta_cut = beta_cut / (np.sum(beta_cut, axis=1).reshape(-1, 1))  # normalize
+        multinomial_pmf = gammaln(np.sum(z_cut, axis=1) + 1) + np.sum(xlogy(z_cut, beta_cut) - gammaln(z_cut + 1),
                                                                       axis=-1)
-        
         likelihood = np.sum(multinomial_pmf)
         return likelihood
     
     def log_likelihood_te(self, document_te):
-        N_K = self.run_info['N_K']
+        n_k = self.run_info['N_K']
         likelihood_te = 0
         for i in range(document_te.shape[0]):
-            for k in range(N_K):
+            for k in range(n_k):
                 x = document_te[i, :]
                 relevant_beta = list(np.where(self.beta[k, :] > self.epsilon)[0])
                 relevant_lambda = list(np.where(x > self.epsilon)[0])
@@ -142,7 +151,7 @@ class Model(object):
                     temp_x = list(x[relevant_dim])
                     temp_beta = list(self.beta[k, relevant_dim])
                     likelihood_te += multinomial.logpmf(temp_x, np.sum(temp_x), temp_beta)
-        likelihood_te = likelihood_te / (document_te.shape[0] * N_K)
+        likelihood_te = likelihood_te / (document_te.shape[0] * n_k)
         return likelihood_te
     
     def update_z(self):
@@ -178,10 +187,10 @@ class Model(object):
             # np.sum(Z_matrix[:, :, k]), size=None)
     
     def update_b(self):
-        N_S = 10
+        n_s = 10
         if not self.converged:
             for k in range(self.run_info['N_K']):
-                random_clusters = sample_local_ind_set(self.run_info['gene_intersection'], self.run_info['N_V'], N_S,
+                random_clusters = sample_local_ind_set(self.run_info['gene_intersection'], self.run_info['N_V'], n_s,
                                                        self.b[k, :], self.beta[k, :], self.run_info['MIS'])
                 
                 unnorm_p_phi = np.zeros([len(random_clusters)])

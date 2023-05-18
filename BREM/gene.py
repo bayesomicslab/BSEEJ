@@ -1,3 +1,6 @@
+from utilities import *
+
+
 class Gene(object):
     
     def __init__(self, name, gene_list_dir):
@@ -32,7 +35,7 @@ class Gene(object):
         # self.min_k = None
     
     def get_sample_df(self):
-        junc_files_list = listdir(self.junc_path)
+        junc_files_list = os.listdir(self.junc_path)
         samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
         samples_df = pd.DataFrame(dtype=int, columns=['chrom', 'chromEnd', 'chromStart',
                                                       'score', 'strand'])
@@ -105,7 +108,7 @@ class Gene(object):
         return intersection_m, overlap_m
     
     def get_document(self):  # preprocess_gene_opt
-        junc_files_list = listdir(self.junc_path)
+        junc_files_list = os.listdir(self.junc_path)
         gene_word_dict = {self.name: {}}
         samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
         valid_samples = []
