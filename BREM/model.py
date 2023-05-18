@@ -1,6 +1,5 @@
 import time
 
-import arviz as az
 from scipy.special import gammaln, xlogy
 from scipy.stats import beta as sci_beta
 from scipy.stats import dirichlet, multinomial
@@ -21,7 +20,16 @@ class Model(object):
         self.theta = None
         self.pi = None
         self.z = None
-    
+        self.init_nodes = None
+        self.z = None
+        self.beta = None
+        self.theta = None
+        self.pi = None
+        self.b = None
+        self.converged = None
+        self.z_init = None
+        self.run_info = None
+
     def initialize_vars(self, gene, n_k):
         self.init_nodes = find_initial_nodes(gene.nodes_df, n_k)
         z_matrix = np.zeros([gene.n_d, gene.n_v, n_k], dtype=int)
@@ -30,7 +38,6 @@ class Model(object):
                 tempz = np.random.randint(0, n_k, size=gene.document[doc, v])
                 for k in range(0, n_k):
                     z_matrix[doc, v, k] = np.count_nonzero(tempz == k)
-    
         self.z_init = z_matrix
     
         # theta: distribution of the samples over clusters
@@ -69,7 +76,7 @@ class Model(object):
         self.converged = False
     
     def make_run_info(self, gene, n_k, burn_in, convergence_checkpoint_interval, n_iter):
-        self.run_info = {}
+        self.run_info = dict()
         self.run_info['N_V'] = gene.n_v
         self.run_info['N_D'] = gene.n_d
         self.run_info['N_K'] = n_k
@@ -100,19 +107,6 @@ class Model(object):
         self.run_info['document_te'] = gene.document_te
         self.run_info['tr_idx'] = gene.training_idx
         self.run_info['te_idx'] = gene.test_idx
-    
-    def is_converged_fwsr(self, likelihood, threshold=0.005):
-        n0 = int(len(likelihood) / 2)
-        this_ess = az.ess(np.array(likelihood[n0:]), method="quantile", prob=0.95)
-        indices = range(n0, len(likelihood), int(this_ess))
-        if len(indices) < 4:
-            return False
-        relevant_likelihood = [likelihood[i] for i in indices]
-        sigma_hat_g_n = np.std(relevant_likelihood)
-        honest_metric = sigma_hat_g_n / np.sqrt(len(indices)) + (1 / len(indices))
-        mean_g_n = np.mean(relevant_likelihood)
-        conv = honest_metric < np.abs(mean_g_n * threshold)
-        return conv
     
     def log_likelihood(self):
         n_d = self.z.shape[0]
@@ -198,12 +192,12 @@ class Model(object):
                     cluster = random_clusters[t]
                     cluster_neighbor = list(
                         np.where(np.sum(self.run_info['gene_intersection'][cluster, :] != 0, axis=0))[0])
-                    
+    
                     term1 = sci_beta.logpdf(x=self.pi[k], a=self.r + len(cluster), b=self.s + len(cluster_neighbor),
                                             loc=0,
                                             scale=1)
-                    relevant_indices = list(set(range(self.run_info['N_V'])) - set(cluster_neighbor))
-                    relevant_indices = np.sort(relevant_indices)
+                    # relevant_indices = list(set(range(self.run_info['N_V'])) - set(cluster_neighbor))
+                    # relevant_indices = np.sort(relevant_indices)
                     b_eta = self.eta * self.b[k, :]
                     b_eta_eps = np.array([v + self.epsilon if np.abs(v) < self.epsilon else v for v in list(b_eta)])
                     temp3 = np.array(
@@ -287,9 +281,9 @@ class Model(object):
             self.update_run_info(it, gene, burn_in)
             
             if it >= burn_in and it % convergence_checkpoint_interval == 0 and not self.converged:
-                
+    
                 log_likelihood_vector = self.get_log_likelihood_vec()
-                self.converged = self.is_converged_fwsr(log_likelihood_vector, threshold=0.005)
+                self.converged = is_converged_fwsr(log_likelihood_vector, threshold=0.005)
                 
                 if self.converged:
                     self.run_info['convergence_point'] = it

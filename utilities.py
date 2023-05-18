@@ -6,6 +6,7 @@ import zipfile
 from collections import Counter
 from copy import deepcopy
 
+import arviz as az
 import networkx as nx
 import numba as nb
 import numpy as np
@@ -406,6 +407,19 @@ def read_run_info(path):
     
     return run_info
 
+
+def is_converged_fwsr(likelihood, threshold=0.005):
+    n0 = int(len(likelihood) / 2)
+    this_ess = az.ess(np.array(likelihood[n0:]), method="quantile", prob=0.95)
+    indices = range(n0, len(likelihood), int(this_ess))
+    if len(indices) < 4:
+        return False
+    relevant_likelihood = [likelihood[i] for i in indices]
+    sigma_hat_g_n = np.std(relevant_likelihood)
+    honest_metric = sigma_hat_g_n / np.sqrt(len(indices)) + (1 / len(indices))
+    mean_g_n = np.mean(relevant_likelihood)
+    conv = honest_metric < np.abs(mean_g_n * threshold)
+    return conv
 
 def main(n_k, max_n_iter, eta, alpha, r, s, main_path, gene_name):
     burn_in = max_n_iter / 2
