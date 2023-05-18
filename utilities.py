@@ -2,7 +2,6 @@ import gzip
 import os
 import pickle
 import random
-import zipfile
 from collections import Counter
 from copy import deepcopy
 
@@ -13,11 +12,8 @@ import numpy as np
 import pandas as pd
 from numba import jit
 
-from BREM.gene import Gene
-from BREM.model import Model
 
-
-def computeDF(n_sample, effective_k, n_introns, result_df, gene_name, z_matrix, starts, ends):
+def compute_df(n_sample, effective_k, n_introns, result_df, gene_name, z_matrix, starts, ends):
     counter = 0
     for sample_id in range(n_sample):
         for cl in range(effective_k):
@@ -29,7 +25,7 @@ def computeDF(n_sample, effective_k, n_introns, result_df, gene_name, z_matrix, 
                 counter += 1
 
 
-def computeDF_vectorized(n_sample, effective_k, n_introns, result_df, gene_name, z_matrix, starts, ends):
+def compute_df_vectorized(n_sample, effective_k, n_introns, result_df, gene_name, z_matrix, starts, ends):
     cls, intrs, startss, endss, sample_ids, zs = getvecs(n_sample * effective_k * n_introns, n_sample, effective_k,
                                                          n_introns, starts, ends, z_matrix)
     result_df.gene = gene_name
@@ -64,13 +60,13 @@ def getvecs(overallsize, n_sample, effective_k, n_introns, starts, ends, z_matri
     return cls, intrs, startss, endss, sample_ids, zs
 
 
-def get_lo(intersection_M):
-    lo = np.zeros([intersection_M.shape[0], 1], dtype=int)
+def get_lo(intersection_m):
+    lo = np.zeros([intersection_m.shape[0], 1], dtype=int)
     # compute lo
-    for node in range(intersection_M.shape[0]):
+    for node in range(intersection_m.shape[0]):
         
         lo_set = []
-        all_adj = np.where(intersection_M[node, :] == 1)[0]
+        all_adj = np.where(intersection_m[node, :] == 1)[0]
         for adj in all_adj:
             if adj < node:
                 lo_set.append(adj)
@@ -82,35 +78,35 @@ def get_lo(intersection_M):
     return lo
 
 
-def generalized_min_node_cover(intersection_M, i=2):
-    lo = get_lo(intersection_M)
-    W = np.zeros([intersection_M.shape[0], 1], dtype=int)
-    MVC = []
+def generalized_min_node_cover(intersection_m, i=2):
+    lo = get_lo(intersection_m)
+    w = np.zeros([intersection_m.shape[0], 1], dtype=int)
+    mvc = []
     
-    for node in range(intersection_M.shape[0]):
+    for node in range(intersection_m.shape[0]):
         must = False
         for u in range(int(lo[node]), node + 1):
-            W[u] += 1
-            if W[u] == i:
+            w[u] += 1
+            if w[u] == i:
                 must = True
-        if must == True:
-            MVC.append(node)
+        if must:
+            mvc.append(node)
             for u in range(int(lo[node]), node + 1):
-                W[u] -= 1
-    return MVC
+                w[u] -= 1
+    return mvc
 
 
 def find_min_clusters(nodes_df):
     _, edges_list = get_conflict_for_plot(nodes_df)
-    G = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
-    min_k = nx.graph_clique_number(G, cliques=None)
+    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
+    min_k = nx.graph_clique_number(gra)
     # min_k = len(nx.maximal_independent_set(G))
     return min_k
 
 
 def get_conflict_for_plot(nodes_df):
     """Find the intervals that have intersection"""
-    intersection_M = np.zeros([nodes_df.shape[0], nodes_df.shape[0]], dtype=int)
+    intersection_m = np.zeros([nodes_df.shape[0], nodes_df.shape[0]], dtype=int)
     edges_list = []
     for v1 in range(nodes_df.shape[0]):
         s1 = nodes_df.loc[v1, 'start']
@@ -119,26 +115,26 @@ def get_conflict_for_plot(nodes_df):
             s2 = nodes_df.loc[v2, 'start']
             e2 = nodes_df.loc[v2, 'end']
             if e1 > s2 and s1 < e2:
-                intersection_M[v1, v2] = 1
-                intersection_M[v2, v1] = 1
+                intersection_m[v1, v2] = 1
+                intersection_m[v2, v1] = 1
                 edges_list.append((v1, v2))
-    return intersection_M, edges_list
+    return intersection_m, edges_list
 
 
 def generate_interval_graph_nx(nodes_df, edges_list, intervalviz=True):
     """Generate the graph G=(V,E) using networkx library and visualize"""
-    G = nx.Graph()
+    gra = nx.Graph()
     if intervalviz:
-        newedgesList = [(nodes_df['graph_labels'][ee[0]], nodes_df['graph_labels'][ee[1]]) for ee in edges_list]
-        G.add_nodes_from(nodes_df['graph_labels'])
+        newedges_list = [(nodes_df['graph_labels'][ee[0]], nodes_df['graph_labels'][ee[1]]) for ee in edges_list]
+        gra.add_nodes_from(nodes_df['graph_labels'])
     else:
-        newedgesList = [(nodes_df['node_labels'][ee[0]], nodes_df['node_labels'][ee[1]]) for ee in edges_list]
-        G.add_nodes_from(nodes_df['node_labels'])
+        newedges_list = [(nodes_df['node_labels'][ee[0]], nodes_df['node_labels'][ee[1]]) for ee in edges_list]
+        gra.add_nodes_from(nodes_df['node_labels'])
         # newedgesList = edges_list
     
-    for e in newedgesList:
-        G.add_edge(*e)
-    return G
+    for e in newedges_list:
+        gra.add_edge(*e)
+    return gra
 
 
 def split_training_test(document_orig, tr_percentage=95):
@@ -152,46 +148,46 @@ def split_training_test(document_orig, tr_percentage=95):
 
 def find_mis(nodes_df):
     _, edges_list = get_conflict_for_plot(nodes_df)
-    G = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
-    GC = nx.complement(G)
-    MIS = nx.graph_clique_number(GC, cliques=None)
-    max_ind_set = nx.maximal_independent_set(G)
-    while len(max_ind_set) < MIS:
-        max_ind_set = nx.maximal_independent_set(G)
+    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
+    gc = nx.complement(gra)
+    mis = nx.graph_clique_number(gc)
+    max_ind_set = nx.maximal_independent_set(gra)
+    while len(max_ind_set) < mis:
+        max_ind_set = nx.maximal_independent_set(gra)
     max_ind_set = [int(n) for n in max_ind_set]
     max_ind_set.sort()
-    return MIS, max_ind_set
+    return mis, max_ind_set
 
 
-def get_initialization(nodes_df, N_K):
+def get_initialization(nodes_df, n_k):
     _, edges_list = get_conflict_for_plot(nodes_df)
-    G = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
+    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
     all_max_ind_set = []
-    while len(all_max_ind_set) < N_K:
-        temp = nx.maximal_independent_set(G)
+    while len(all_max_ind_set) < n_k:
+        temp = nx.maximal_independent_set(gra)
         if temp not in all_max_ind_set:
             all_max_ind_set.append(temp)
     return all_max_ind_set
 
 
-def find_initial_nodes(nodes_df, N_K):
+def find_initial_nodes(nodes_df, n_k):
     _, edges_list = get_conflict_for_plot(nodes_df)
-    G = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
+    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
     all_max_ind_set = []
     for i in range(1000):
-        temp = nx.maximal_independent_set(G)
+        temp = nx.maximal_independent_set(gra)
         if temp not in all_max_ind_set:
             all_max_ind_set.append(temp)
     
-    while len(all_max_ind_set) < N_K:
-        temp = nx.maximal_independent_set(G)
+    while len(all_max_ind_set) < n_k:
+        temp = nx.maximal_independent_set(gra)
         all_max_ind_set.append(temp)
     return all_max_ind_set
 
 
-def add_node_IS_Beta(S, gene_intersection, N_V, bet):
-    free = set(range(N_V)) - set(S)
-    for ss in S:
+def add_node_is_beta(s, gene_intersection, n_v, bet):
+    free = set(range(n_v)) - set(s)
+    for ss in s:
         neighbor_ss = set(np.where(gene_intersection[ss, :] == 1)[0])
         free = free - neighbor_ss
         if len(free) == 0:
@@ -200,40 +196,40 @@ def add_node_IS_Beta(S, gene_intersection, N_V, bet):
     return add_node
 
 
-def del_node_IS_Beta(S, bet):
-    if len(S) == 0:
+def del_node_is_beta(s, bet):
+    if len(s) == 0:
         return []
-    del_node = random.choices(list(S), weights=1 - (bet[S] / np.sum(bet[S])), k=1)
+    del_node = random.choices(list(s), weights=1 - (bet[s] / np.sum(bet[s])), k=1)
     return del_node
 
 
-def sample_local_ind_set(gene_intersection, N_V, N_S, b_k, Beta_k, MIS):
+def sample_local_ind_set(gene_intersection, n_v, n_s, b_k, beta_k, mis):
     max_trial = 200
     
-    S = list(np.where(b_k)[0])
-    S.sort()
+    s = list(np.where(b_k)[0])
+    s.sort()
     random_clusters = []
-    temp2 = deepcopy(S)
+    temp2 = deepcopy(s)
     random_clusters.append(temp2)
     trial = 0
-    while len(random_clusters) < N_S and trial < max_trial:
+    while len(random_clusters) < n_s and trial < max_trial:
         trial += 1
-        rnd = np.random.binomial(n=1, p=1 - (len(S) / MIS))
+        rnd = np.random.binomial(n=1, p=1 - (len(s) / mis))
         if rnd >= 0.5:
-            an = add_node_IS_Beta(S, gene_intersection, N_V, Beta_k)
+            an = add_node_is_beta(s, gene_intersection, n_v, beta_k)
             if len(an) != 0:
-                S.append(an[0])
-                S.sort()
-                temp = deepcopy(S)
+                s.append(an[0])
+                s.sort()
+                temp = deepcopy(s)
                 if temp not in random_clusters:
                     random_clusters.append(temp)
         else:
-            dn = del_node_IS_Beta(S, Beta_k)
-            
-            if len(dn) != 0 and len(S) != 1:
-                S.remove(dn[0])
-                S.sort()
-                temp = deepcopy(S)
+            dn = del_node_is_beta(s, beta_k)
+    
+            if len(dn) != 0 and len(s) != 1:
+                s.remove(dn[0])
+                s.sort()
+                temp = deepcopy(s)
                 if temp not in random_clusters and len(temp) > 0:
                     random_clusters.append(temp)
     
@@ -241,11 +237,11 @@ def sample_local_ind_set(gene_intersection, N_V, N_S, b_k, Beta_k, MIS):
 
 
 def find_duplicate_clusters(b):
-    input = map(tuple, b)
+    inputs = map(tuple, b)
     
-    freqDict = Counter(input)
+    freq_dict = Counter(inputs)
     
-    duplicated_clusters = [row for row in freqDict.keys() if freqDict[row] > 1]
+    duplicated_clusters = [row for row in freq_dict.keys() if freq_dict[row] > 1]
     
     return duplicated_clusters
 
@@ -302,8 +298,8 @@ def save_results(gene, model):
     
     result_df = pd.DataFrame(data=0, columns=['gene', 'trans_id', 'index', 'start', 'end', 'sample', 'FPKM'],
                              index=range(n_sample * effective_k * n_introns))
-    
-    computeDF_vectorized(n_sample, effective_k, n_introns, result_df, gene_name, z_matrix, starts, ends)
+
+    compute_df_vectorized(n_sample, effective_k, n_introns, result_df, gene_name, z_matrix, starts, ends)
     
     file_name_2 = 'brem_' + gene_name + '_K_' + str(effective_k) + '.csv'
     result_df.to_csv(gene.result_path + '/' + file_name_2)
@@ -319,9 +315,9 @@ def needed_n_k_list(gene):
         done_k = []
     else:
         done_k = []
-    N_K_v = sorted(gene.all_n_k[::2][:9])
-    N_K_v = list(set(N_K_v) - set(done_k))
-    return N_K_v
+    n_k_v = sorted(gene.all_n_k[::2][:9])
+    n_k_v = list(set(n_k_v) - set(done_k))
+    return n_k_v
 
 
 def compute_config_score(sam_df, trans_introns_f, config):
@@ -390,9 +386,9 @@ def update_z_loop_numba(beta, theta, n_tr, n_v, n_k, document_tr):
 
 
 def read_run_info(path):
+    run_info = 0
     if os.path.getsize(path) == 0:
         run_info = 0
-    
     else:
         if '.gz' in path:
             with gzip.open(path) as handle:
@@ -400,7 +396,6 @@ def read_run_info(path):
         elif '.json' in path and os.path.getsize(path) > 0:
             with open(path, 'rb') as handle:
                 run_info = pickle.load(handle)
-        
         elif '.pkl' in path:
             with gzip.open(path, 'rb') as ifp:
                 run_info = pickle.load(ifp)
@@ -420,28 +415,3 @@ def is_converged_fwsr(likelihood, threshold=0.005):
     mean_g_n = np.mean(relevant_likelihood)
     conv = honest_metric < np.abs(mean_g_n * threshold)
     return conv
-
-def main(n_k, max_n_iter, eta, alpha, r, s, main_path, gene_name):
-    burn_in = max_n_iter / 2
-    convergence_checkpoint_interval = (max_n_iter - burn_in) / 10
-    epsilon = 0.000001
-    
-    # Read gene junction files
-    with zipfile.ZipFile(os.path.join(main_path, gene_name) + '.zip', 'r') as zip_ref:
-        zip_ref.extractall(main_path)
-    
-    # Make the model and gene objects
-    print('training gene', gene_name, 'with k =', n_k)
-    model = Model(eta=eta, alpha=alpha, epsilon=epsilon, r=r, s=s)
-    
-    gene = Gene(gene_name, main_path)
-    
-    # Preprocess the gene
-    gene.preprocess()
-    
-    # Train the gene
-    model.train(gene, n_k, n_iter=max_n_iter, burn_in=burn_in,
-                convergence_checkpoint_interval=convergence_checkpoint_interval, verbose=True)
-    
-    # Save all the results, including all the parameters in the model in a pickle file and clusters
-    _ = save_results(gene, model)

@@ -1,12 +1,41 @@
 import sys
 
+from utilities import *
+
+
+def main(n_k, max_n_iteration, eta_var, alpha_var, r_var, s_var, main_folder, gene_label):
+    burn_in = max_n_iteration / 2
+    convergence_checkpoint_interval = (max_n_iteration - burn_in) / 10
+    epsilon = 0.000001
+    
+    # Read gene junction files
+    with zipfile.ZipFile(os.path.join(main_folder, gene_label) + '.zip', 'r') as zip_ref:
+        zip_ref.extractall(main_folder)
+    
+    # Make the model and gene objects
+    print('training gene', gene_label, 'with k =', n_k)
+    model = Model(eta=eta_var, alpha=alpha_var, epsilon=epsilon, r=r_var, s=s_var)
+    
+    gene = Gene(gene_label, main_folder)
+    
+    # Preprocess the gene
+    gene.preprocess()
+    
+    # Train the gene
+    model.train(gene, n_k, n_iter=max_n_iteration, burn_in=burn_in,
+                convergence_checkpoint_interval=convergence_checkpoint_interval, verbose=True)
+    
+    # Save all the results, including all the parameters in the model in a pickle file and clusters
+    _ = save_results(gene, model)
+
+
 if __name__ == '__main__':
-
+    
     if '-k' in sys.argv:
-        n_k = int(sys.argv[sys.argv.index('-k') + 1])
+        n_cluster = int(sys.argv[sys.argv.index('-k') + 1])
     else:
-        n_k = 1
-
+        n_cluster = 1
+    
     if '-i' in sys.argv:
         max_n_iter = int(sys.argv[sys.argv.index('-i') + 1])
     else:
@@ -41,5 +70,5 @@ if __name__ == '__main__':
         gene_name = sys.argv[sys.argv.index('-g') + 1]
     else:
         gene_name = 'A2ML1'
-
-    main(n_k, max_n_iter, eta, alpha, r, s, main_path, gene_name)
+    
+    main(n_cluster, max_n_iter, eta, alpha, r, s, main_path, gene_name)
