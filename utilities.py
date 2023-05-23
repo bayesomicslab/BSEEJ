@@ -415,3 +415,10 @@ def is_converged_fwsr(likelihood, threshold=0.005):
     mean_g_n = np.mean(relevant_likelihood)
     conv = honest_metric < np.abs(mean_g_n * threshold)
     return conv
+
+
+def tuple_constructor(loader, node):
+    # Load the sequence of values from the YAML node
+    values = loader.construct_sequence(node)
+    # Return a tuple constructed from the sequence
+    return tuple(values)
