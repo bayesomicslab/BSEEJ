@@ -12,9 +12,8 @@ class Main(object):
     @classmethod
     def main(self, cmd_args):
         """
-        The main function sets up the haplotype assembly, loads in data, and starts the algorithm.
-        yyy :param cmd_args: command line parameters
-        :return: None
+        The main function sets the hyper-parameters values, accordingly initilizes BREM algorithm,
+        then makes the model and saves the results.
         """
         
         self.init(cmd_args)
@@ -91,11 +90,12 @@ class Main(object):
                             default=cls.max_n_iter)
         parser.add_argument("-e", "--eta", required=False, help="eta (default = 0.01)", default=cls.eta)
         parser.add_argument("-a", "--alpha", required=False, help="alpha (default = 1)", default=cls.alpha)
-        parser.add_argument("-r", "--r", required=False, help="alpha (default = 1)", default=cls.r)
-        parser.add_argument("-s", "--s", required=False, help="alpha (default = 1)", default=cls.s)
-        parser.add_argument("-p", "--main_path", required=False, help="alpha (default = 1)", default=cls.main_path)
-        parser.add_argument("-g", "--gene_name", required=False, help="alpha (default = 1)", default=cls.gene_name)
-        
+        parser.add_argument("-r", "--r", required=False, help="model parameter r (default = 1)", default=cls.r)
+        parser.add_argument("-s", "--s", required=False, help="model parameter s (default = 1)", default=cls.s)
+        parser.add_argument("-p", "--main_path", required=False, help="Main path (default = ./)", default=cls.main_path)
+        parser.add_argument("-g", "--gene_name", required=False, help="gene_name (default = A2ML1)",
+                            default=cls.gene_name)
+    
         return parser
 
 
