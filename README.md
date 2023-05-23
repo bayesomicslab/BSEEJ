@@ -32,7 +32,7 @@ python3 brem.py
 Or alternatively for changing model parameters or training other genes run:
  
 ```sh
-python3 brem.py -k clusters_no -i max iteration  -eta eta hyper parameter -alpha alpha hyper-parameter -r r -s s -a path -g gene
+python3 brem.py -k clusters_no -i max iteration  -e eta hyper parameter -a alpha hyper-parameter -r r -s s -p path -g gene
 ```
     - clusters_no: number of clusters, this number should be larger than the number of minimum node cover of the interval graph of the intron excisions
     - max iteration: the maximum number of iterations for the Gibbs updates
