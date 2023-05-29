@@ -8,81 +8,79 @@ from utilities import *
 
 
 class Main(object):
+    """ Initializes the input values """
+    n_cluster = 1
+    max_n_iter = 1000
+    eta = 0.01
+    alpha = 1
+    r = 1
+    s = 1
+    p = ''
+    g = 'A2ML1'
     
     @classmethod
-    def main(self, cmd_args):
+    def main(cls, cmd_args):
         """
         The main function sets the hyper-parameters values, accordingly initilizes BREM algorithm,
         then makes the model and saves the results.
         """
         
-        self.init(cmd_args)
+        cls.init(cmd_args)
         
         print('=====================================================')
-        print('Gene:', self.g)
-        print('path: ./', self.p)
+        print('Gene:', cls.g)
+        print('path: ./', cls.p)
         
-        print('Number of clusters:', self.n_cluster)
-        print('Maximum number of iterations:', self.max_n_iter)
+        print('Number of clusters:', cls.n_cluster)
+        print('Maximum number of iterations:', cls.max_n_iter)
         
-        print('model parameter, eta:', self.eta)
-        print('model parameter, alpha:', self.alpha)
-        print('model parameter, r:', self.r)
-        print('model parameter, s:', self.s)
+        print('model parameter, eta:', cls.eta)
+        print('model parameter, alpha:', cls.alpha)
+        print('model parameter, r:', cls.r)
+        print('model parameter, s:', cls.s)
         print('=====================================================')
         
-        burn_in = self.max_n_iter / 2
-        convergence_checkpoint_interval = (self.max_n_iter - burn_in) / 10
+        burn_in = cls.max_n_iter / 2
+        convergence_checkpoint_interval = (cls.max_n_iter - burn_in) / 10
         epsilon = 0.000001
         
         # Read gene junction files
-        with zipfile.ZipFile(os.path.join(self.p, self.g) + '.zip', 'r') as zip_ref:
-            zip_ref.extractall(self.p)
+        with zipfile.ZipFile(os.path.join(cls.p, cls.g) + '.zip', 'r') as zip_ref:
+            zip_ref.extractall(cls.p)
         
         # Make the model and gene objects
-        print('training gene', self.g, 'with k =', self.n_cluster)
-        model = Model(eta=self.eta, alpha=self.alpha, epsilon=epsilon, r=self.r, s=self.s)
+        print('training gene', cls.g, 'with k =', cls.n_cluster)
+        model = Model(eta=cls.eta, alpha=cls.alpha, epsilon=epsilon, r=cls.r, s=cls.s)
         
-        gene = Gene(self.g, self.p)
+        gene = Gene(cls.g, cls.p)
         
         # Preprocess the gene
         gene.preprocess()
         
         # Train the gene
-        model.train(gene, self.n_cluster, n_iter=self.max_n_iter, burn_in=burn_in,
+        model.train(gene, cls.n_cluster, n_iter=cls.max_n_iter, burn_in=burn_in,
                     convergence_checkpoint_interval=convergence_checkpoint_interval, verbose=True)
         
         # Save all the results, including all the parameters in the model in a pickle file and clusters
         _ = save_results(gene, model)
     
     @classmethod
-    def init(self, cmd_args):
-        """ Initializes the input values """
-        
-        self.n_cluster = 1
-        self.max_n_iter = 1000
-        self.eta = 0.01
-        self.alpha = 1
-        self.r = 1
-        self.s = 1
-        self.main_path = ''
-        self.gene_name = 'A2ML1'
-        
+    def init(cls, cmd_args):
         """ Check the parser for possible inputs and overrides the existing default values if any. """
-        parser = Main.getParser()
+        parser = Main.get_parser()
         args = parser.parse_args(cmd_args[1:])
         
-        self.n_cluster = int(args.n_cluster)
-        self.max_n_iter = int(args.max_n_iter)
-        self.eta = args.eta
-        self.alpha = args.alpha
-        self.r = args.r
-        self.s = args.s
-        self.p = args.main_path
-        self.g = args.gene_name
+        cls.n_cluster = int(args.n_cluster)
+        cls.max_n_iter = int(args.max_n_iter)
+        cls.eta = args.eta
+        cls.alpha = args.alpha
+        cls.r = args.r
+        cls.s = args.s
+        cls.p = args.main_path
+        cls.g = args.gene_name
     
     @classmethod
-    def getParser(cls):
+    def get_parser(cls):
         parser = argparse.ArgumentParser(description='Implementation of BREM.')
         parser.add_argument("-k", "--n_cluster", help="Number of clusters (integer >= 1, default = 1)",
                             default=1)
@@ -92,9 +90,9 @@ class Main(object):
         parser.add_argument("-a", "--alpha", required=False, help="alpha (default = 1)", default=cls.alpha)
         parser.add_argument("-r", "--r", required=False, help="model parameter r (default = 1)", default=cls.r)
         parser.add_argument("-s", "--s", required=False, help="model parameter s (default = 1)", default=cls.s)
-        parser.add_argument("-p", "--main_path", required=False, help="Main path (default = ./)", default=cls.main_path)
+        parser.add_argument("-p", "--main_path", required=False, help="Main path (default = ./)", default=cls.p)
         parser.add_argument("-g", "--gene_name", required=False, help="gene_name (default = A2ML1)",
-                            default=cls.gene_name)
+                            default=cls.g)
     
         return parser
 

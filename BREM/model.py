@@ -31,6 +31,7 @@ class Model(object):
         self.run_info = None
 
     def initialize_vars(self, gene, n_k):
+        """This function initializes model parameters and other variables for training (Gibbs)"""
         self.init_nodes = find_initial_nodes(gene.nodes_df, n_k)
         z_matrix = np.zeros([gene.n_d, gene.n_v, n_k], dtype=int)
         for doc in range(0, gene.n_d):
@@ -76,6 +77,7 @@ class Model(object):
         self.converged = False
     
     def make_run_info(self, gene, n_k, burn_in, convergence_checkpoint_interval, n_iter):
+        """"""
         self.run_info = dict()
         self.run_info['N_V'] = gene.n_v
         self.run_info['N_D'] = gene.n_d
