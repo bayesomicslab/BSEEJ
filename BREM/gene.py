@@ -113,6 +113,7 @@ class Gene(object):
         return intersection_m, overlap_m
     
     def get_document(self):  # preprocess_gene_opt
+        """Extract all samples information from non empty .bam files"""
         junc_files_list = os.listdir(self.junc_path)
         gene_word_dict = {self.name: {}}
         samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
@@ -150,6 +151,7 @@ class Gene(object):
         return gene_word_dict, document, id2w_dict, w2id_dict
     
     def is_trainable(self):
+        """This function determines if the minimum number of clusters for a gene is less than 2 (trivial case)"""
         # self.samples_df, self.samples_df_dict = self.get_sample_df()
         if len(self.samples_df) == 0:
             return False
@@ -162,6 +164,7 @@ class Gene(object):
                 return True
     
     def preprocess(self):
+        """This function computes initial properties of the interval graph before Gibbs runs."""
         self.intersection, self.overlap_m = self.get_conflict()
         self.mvc = generalized_min_node_cover(self.intersection, i=2)
         self.word_dict, self.document, self.id2w_dict, self.w2id_dict = self.get_document()
