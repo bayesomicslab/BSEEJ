@@ -77,7 +77,7 @@ class Model(object):
         self.converged = False
     
     def make_run_info(self, gene, n_k, burn_in, convergence_checkpoint_interval, n_iter):
-        """"""
+        """this function saves all the information in the Gibbs runs"""
         self.run_info = dict()
         self.run_info['N_V'] = gene.n_v
         self.run_info['N_D'] = gene.n_d
@@ -111,6 +111,7 @@ class Model(object):
         self.run_info['te_idx'] = gene.test_idx
     
     def log_likelihood(self):
+        """Computes log likelihood at the end of each Gibbs iteration"""
         n_d = self.z.shape[0]
         n_v = self.z.shape[1]
         n_k = self.z.shape[2]
@@ -135,6 +136,7 @@ class Model(object):
         return likelihood
     
     def log_likelihood_te(self, document_te):
+        """Computes log likelihood of test"""
         n_k = self.run_info['N_K']
         likelihood_te = 0
         for i in range(document_te.shape[0]):
@@ -151,6 +153,7 @@ class Model(object):
         return likelihood_te
     
     def update_z(self):
+        """Update z variable in the model"""
         # Sample from full conditional of Z
         # save for computing relative error
         self.beta = adjust_matrices(self.beta, self.epsilon)
@@ -166,15 +169,18 @@ class Model(object):
                 
                 for k in range(0, self.run_info['N_K']):
                     self.z[doc, v, k] = np.count_nonzero(tempz == k)
-    
+
     def update_theta(self):
-        
+        """Update \theta variable in the model"""
+    
         # Sample from full conditional of Theta
         for doc in range(self.run_info['N_D']):
             self.theta[doc, :] = np.random.dirichlet(self.alpha + np.sum(self.z[doc, :, :], axis=0))
         self.theta[self.theta < self.epsilon] = self.epsilon
-    
+
     def update_pi(self):
+        """Update \pi variable in the model"""
+    
         # update for pi
         m = np.sum(self.b, axis=1)
         for k in range(self.run_info['N_K']):
@@ -183,6 +189,7 @@ class Model(object):
             # np.sum(Z_matrix[:, :, k]), size=None)
     
     def update_b(self):
+        """Update b variable in the model"""
         n_s = 10
         if not self.converged:
             for k in range(self.run_info['N_K']):
@@ -221,16 +228,19 @@ class Model(object):
                 temp = np.zeros([self.run_info['N_V']], dtype=int)
                 temp[new_cluster] = 1
                 self.b[k, :] = deepcopy(temp)
-    
+
     def update_beta(self):
-        
+        """Update \beta variable in the model"""
+    
         # Sample from full conditional of Beta
         # Z_matrix[:, v, k] counts the number of times word v is assigned to cluster k throughout the whole corpus
         for k in range(self.run_info['N_K']):
             temp_b = np.array([v + self.epsilon if v == 0 else v for v in list(self.b[k, :])])
             self.beta[k, :] = np.random.dirichlet(temp_b * self.eta + np.sum(self.z[:, :, k], axis=0))
-    
+
     def update_run_info(self, t, gg, burn_in):
+        """saves Gibbs iteration info in the data"""
+    
         self.run_info['gibbs'][t]['Theta'] = deepcopy(self.theta)
         self.run_info['gibbs'][t]['Beta'] = deepcopy(self.beta)
         self.run_info['gibbs'][t]['b'] = deepcopy(self.b)
@@ -238,7 +248,7 @@ class Model(object):
                 self.run_info['N_D'] * self.run_info['N_W'])
         self.run_info['gibbs'][t]['likelihood_i'] = self.log_likelihood()
         self.run_info['gibbs'][t]['likelihood_te'] = self.log_likelihood_te(gg.document_te)
-        
+    
         if t == 0:
             self.run_info['gibbs'][t]['relative_error'] = np.sum(np.abs(self.z - self.z_init)) / (
                     self.run_info['N_D'] * self.run_info['N_W'])
@@ -250,24 +260,27 @@ class Model(object):
             self.run_info['gibbs'][t]['Z'] = deepcopy(self.z)
         else:
             self.run_info['gibbs'][t]['Z'] = 0
-    
+
     def get_log_likelihood_vec(self):
+        """extract the values of likelihood from run info dictionary"""
+    
         runs_dict = self.run_info['gibbs']
         likelihood = []
         for i in runs_dict.keys():
             likelihood.append(runs_dict[i]['likelihood_i'])
         return likelihood
-    
+
     def train(self, gene, n_k, n_iter, burn_in, convergence_checkpoint_interval, verbose):
-        
+        """Run Gibbs sampling on the data"""
+    
         self.initialize_vars(gene, n_k)
         self.make_run_info(gene, n_k, burn_in, convergence_checkpoint_interval, n_iter)
         self.run_info['gibbs'] = {}
-        
+    
         startiter = time.time()
         it = 0
         while it <= min(self.run_info['convergence_point'] + 100, n_iter):
-            
+        
             self.run_info['gibbs'][it] = {}
             
             self.update_z()

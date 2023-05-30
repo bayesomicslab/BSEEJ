@@ -4,6 +4,9 @@ from utilities import *
 class Gene(object):
     
     def __init__(self, name, gene_list_dir):
+        """Initialize gene instance from the zip file containing the gene .bam files:
+        This function computes the gene nodes and the interval graph and minimum number of clusters"""
+    
         self.name = name
         self.junc_path = gene_list_dir + name + '/'
         self.result_path = gene_list_dir + 'results_' + self.name
@@ -33,8 +36,10 @@ class Gene(object):
         # self.samples_df_dict = None
         # self.nodes_df = None
         # self.min_k = None
-    
+
     def get_sample_df(self):
+        """computes the gene's intro excisions from .bam files."""
+    
         junc_files_list = os.listdir(self.junc_path)
         samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
         samples_df = pd.DataFrame(dtype=int, columns=['chrom', 'chromEnd', 'chromStart',
