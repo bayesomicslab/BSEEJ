@@ -79,6 +79,7 @@ def get_lo(intersection_m):
 
 
 def generalized_min_node_cover(intersection_m, i=2):
+    """Compute minimum node cover from the generalized min node cover algorithm."""
     lo = get_lo(intersection_m)
     w = np.zeros([intersection_m.shape[0], 1], dtype=int)
     mvc = []
