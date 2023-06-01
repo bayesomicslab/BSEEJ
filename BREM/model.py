@@ -33,7 +33,7 @@ class Model(object):
     def initialize_vars(self, gene, n_k):
         """This function initializes model parameters and other variables for training (Gibbs)"""
         self.init_nodes = find_initial_nodes(gene.nodes_df, n_k)
-        z_matrix = np.zeros([gene.n_d, gene.n_v, n_k], dtype=int)
+        z_matrix = np.zeros([gene.n_d, gene.n_v, n_k], dtype=np.int32)
         for doc in range(0, gene.n_d):
             for v in range(0, gene.n_v):
                 tempz = np.random.randint(0, n_k, size=gene.document[doc, v])
@@ -54,7 +54,7 @@ class Model(object):
         pi = np.random.beta(self.r, self.s, size=n_k)
     
         # b: distribution initialization
-        b = np.zeros([n_k, gene.n_v], dtype=int)
+        b = np.zeros([n_k, gene.n_v], dtype=np.int32)
         for k in range(n_k):
             init = [int(node) for node in self.init_nodes[k]]
             b[k, init] = 1
@@ -225,7 +225,7 @@ class Model(object):
                     pop.append(new_cluster_idx)
                 new_cluster_idx = max(set(pop), key=pop.count)
                 new_cluster = random_clusters[new_cluster_idx]
-                temp = np.zeros([self.run_info['N_V']], dtype=int)
+                temp = np.zeros([self.run_info['N_V']], dtype=np.int32)
                 temp[new_cluster] = 1
                 self.b[k, :] = deepcopy(temp)
 

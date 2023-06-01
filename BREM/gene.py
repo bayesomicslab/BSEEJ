@@ -42,16 +42,21 @@ class Gene(object):
     
         junc_files_list = os.listdir(self.junc_path)
         samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
-        samples_df = pd.DataFrame(dtype=int, columns=['chrom', 'chromEnd', 'chromStart',
-                                                      'score', 'strand'])
+        samples = []
         for sample in samples_list:
             if '.gz' in sample:
                 with gzip.open(self.junc_path + sample) as f:
-                    sample_df = pd.read_csv(f, sep='\t')
-                    samples_df = samples_df.append(sample_df, ignore_index=True)
+                    sample = pd.read_csv(f, sep='\t').values.tolist()
+                    samples.extend(sample)
             else:
-                sample_df = pd.read_csv(self.junc_path + sample, sep='\t')
-                samples_df = samples_df.append(sample_df, ignore_index=True)
+                sample = pd.read_csv(self.junc_path + sample, sep='\t').values.tolist()
+                samples.extend(sample)
+        
+        samples_df = pd.DataFrame(samples, columns=['chrom', 'chromStart', 'chromEnd',
+                                                      'qual', 'score', 'strand'])
+        samples_df = samples_df[['chrom', 'chromStart', 'chromEnd','score', 'strand']]
+        samples_df = samples_df.astype({"chromStart": np.int32, "chromEnd": np.int32, "score": np.int32})
+
         if len(samples_df) == 0:
             return [], []
         else:
@@ -71,7 +76,7 @@ class Gene(object):
         Irange: (integer): The range, in which the intervals fall into"""
         
         junc_num = self.samples_df.shape[0]
-        nodes_df = pd.DataFrame(data=np.zeros([junc_num, 3]), dtype=int,
+        nodes_df = pd.DataFrame(data=np.zeros([junc_num, 3]), dtype=np.int32,
                                 columns=['start', 'length', 'end'],
                                 index=range(0, junc_num))
         
@@ -95,7 +100,7 @@ class Gene(object):
     
     def get_conflict(self):
         """Find the intervals that have intersection"""
-        intersection_m = np.zeros([self.nodes_df.shape[0], self.nodes_df.shape[0]], dtype=int)
+        intersection_m = np.zeros([self.nodes_df.shape[0], self.nodes_df.shape[0]], dtype=np.int32)
         overlap_m = np.zeros([self.nodes_df.shape[0], self.nodes_df.shape[0]])
         for v1 in range(self.nodes_df.shape[0]):
             s1 = self.nodes_df.loc[v1, 'start']
@@ -143,7 +148,7 @@ class Gene(object):
             id2w_dict[i] = word
             w2id_dict[word] = i
         n_v = self.nodes_df.shape[0]
-        document = np.zeros([len(valid_samples), n_v], dtype=int)
+        document = np.zeros([len(valid_samples), n_v], dtype=np.int32)
         for sample_id in range(len(valid_samples)):
             for key in gene_word_dict[self.name][valid_samples[sample_id]]:
                 document[sample_id, w2id_dict[key]] = gene_word_dict[self.name][valid_samples[sample_id]][key]

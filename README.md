@@ -19,9 +19,10 @@ git clone https://github.com/aguiarlab/BREM.git
 cd BREM
 ```
 
-2. Install the project dependencies:
+2. Install the project dependencies and activate the environment:
 ```sh
-pip install -r requirements.txt
+conda env create -f brem_env.yml
+conda activate brem_env
 ```
 
 3. Run the code:

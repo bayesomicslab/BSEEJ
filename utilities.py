@@ -61,7 +61,7 @@ def getvecs(overallsize, n_sample, effective_k, n_introns, starts, ends, z_matri
 
 
 def get_lo(intersection_m):
-    lo = np.zeros([intersection_m.shape[0], 1], dtype=int)
+    lo = np.zeros([intersection_m.shape[0], 1], dtype=np.int32)
     # compute lo
     for node in range(intersection_m.shape[0]):
         
@@ -80,7 +80,7 @@ def get_lo(intersection_m):
 
 def generalized_min_node_cover(intersection_m, i=2):
     lo = get_lo(intersection_m)
-    w = np.zeros([intersection_m.shape[0], 1], dtype=int)
+    w = np.zeros([intersection_m.shape[0], 1], dtype=np.int32)
     mvc = []
     
     for node in range(intersection_m.shape[0]):
@@ -106,7 +106,7 @@ def find_min_clusters(nodes_df):
 
 def get_conflict_for_plot(nodes_df):
     """Find the intervals that have intersection"""
-    intersection_m = np.zeros([nodes_df.shape[0], nodes_df.shape[0]], dtype=int)
+    intersection_m = np.zeros([nodes_df.shape[0], nodes_df.shape[0]], dtype=np.int32)
     edges_list = []
     for v1 in range(nodes_df.shape[0]):
         s1 = nodes_df.loc[v1, 'start']
@@ -197,10 +197,10 @@ def add_node_is_beta(s, gene_intersection, n_v, bet):
 
 
 def del_node_is_beta(s, bet):
-    if len(s) == 0:
-        return []
-    del_node = random.choices(list(s), weights=1 - (bet[s] / np.sum(bet[s])), k=1)
-    return del_node
+    if len(s) <= 1:
+        return s
+    else: 
+        return random.choices(list(s), weights=1 - (bet[s] / np.sum(bet[s])), k=1)
 
 
 def sample_local_ind_set(gene_intersection, n_v, n_s, b_k, beta_k, mis):

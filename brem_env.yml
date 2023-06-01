@@ -1,0 +1,19 @@
+name: brem_env
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - arviz
+  - nbclient
+  - nbconvert
+  - nbformat
+  - networkx
+  - numba
+  - numexpr
+  - numpy
+  - pandas
+  - scikit-image
+  - scikit-learn
+  - scipy
+  - Theano
