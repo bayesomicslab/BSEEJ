@@ -48,11 +48,11 @@ class Main(object):
         with zipfile.ZipFile(os.path.join(cls.p, cls.g) + '.zip', 'r') as zip_ref:
             zip_ref.extractall(cls.p)
 
-        quit()
-        
         # Make the model and gene objects
         print('training gene', cls.g, 'with k =', cls.n_cluster)
         model = Model(eta=cls.eta, alpha=cls.alpha, epsilon=epsilon, r=cls.r, s=cls.s)
+
+        quit()
         
         gene = Gene(cls.g, cls.p)
         
