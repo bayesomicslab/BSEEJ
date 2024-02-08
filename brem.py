@@ -51,10 +51,10 @@ class Main(object):
         # Make the model and gene objects
         print('training gene', cls.g, 'with k =', cls.n_cluster)
         model = Model(eta=cls.eta, alpha=cls.alpha, epsilon=epsilon, r=cls.r, s=cls.s)
-
-        quit()
         
         gene = Gene(cls.g, cls.p)
+
+        quit()
         
         # Preprocess the gene
         gene.preprocess()
