@@ -9,6 +9,7 @@ class Gene(object):
     
         self.name = name
         self.junc_path = gene_list_dir + name + '/'
+        print(self.junc_path)
         self.result_path = gene_list_dir + 'results_' + self.name
         self.samples_df, self.samples_df_dict = self.get_sample_df()
         self.nodes_df = self.get_junctions()
