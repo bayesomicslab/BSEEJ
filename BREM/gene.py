@@ -7,10 +7,10 @@ class Gene(object):
         """Initialize gene instance from the zip file containing the gene .bam files:
         This function computes the gene nodes and the interval graph and minimum number of clusters"""
     
-        self.name = name
-        self.junc_path = gene_list_dir + name + '/'
-        self.result_path = gene_list_dir + 'results_' + self.name
-        self.samples_df, self.samples_df_dict = self.get_sample_df()
+        self.name = name # Corresponds to the gene name
+        self.junc_path = gene_list_dir + name + '/' # Corresponds to the path to the .junc file
+        self.result_path = gene_list_dir + 'results_' + self.name # Sets a path to save model training results
+        self.samples_df, self.samples_df_dict = self.get_sample_df() 
 
         return
 
@@ -40,11 +40,14 @@ class Gene(object):
         # self.nodes_df = None
         # self.min_k = None
 
+    # Gets the samples from the .junc files and saves them into a single datafram
     def get_sample_df(self):
         """computes the gene's intro excisions from .bam files."""
     
-        junc_files_list = os.listdir(self.junc_path)
-        samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
+        junc_files_list = os.listdir(self.junc_path) # List all of the junction files in the path
+        samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s] # grab all of the junction files that correspond to the gene from the folder
+
+        #Grabs all the samples, reads the individual csv files, and adds them to a single list called samples 
         samples = []
         for sample in samples_list:
             if '.gz' in sample:
@@ -54,18 +57,33 @@ class Gene(object):
             else:
                 sample = pd.read_csv(self.junc_path + sample, sep='\t').values.tolist()
                 samples.extend(sample)
+
         
+        # Convert the lists of values into a dataframe, with columns chromStart chromEnd qual score strand
+        # qual is dropped later
+        # changes the chromStart to ints and chromEnd to ints and score to int
         samples_df = pd.DataFrame(samples, columns=['chrom', 'chromStart', 'chromEnd',
                                                       'qual', 'score', 'strand'])
         samples_df = samples_df[['chrom', 'chromStart', 'chromEnd','score', 'strand']]
         samples_df = samples_df.astype({"chromStart": np.int32, "chromEnd": np.int32, "score": np.int32})
 
+        # If there aren't any strands then welp idk return nothing?
         if len(samples_df) == 0:
             return [], []
         else:
-            
+            # Groups all junctions with the same start and end into only one and adds up their individual scores. This guarantees there are no repeated junctions
             samples_df = samples_df.groupby(['chromEnd', 'chromStart'])['score'].sum().reset_index()
+            print(samples_df)
             
+            # Builds a dictionary of dictionaries where the first key is the row and the second key is the column:
+            #{
+            #   1: {
+            #       "chromEnd": 10101
+            #       "chromStart": 12101
+            #       "score": 2
+            #   }
+            #   ...
+            #}
             samples_df_dict = {}
             for i in range(len(samples_df)):
                 samples_df_dict[i] = {}

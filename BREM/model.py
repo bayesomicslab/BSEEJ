@@ -7,12 +7,15 @@ from scipy.stats import dirichlet, multinomial
 from utilities import *
 
 
+# The model we will be using to run 
 class Model(object):
     
+    # Initialize model parameters
     def __init__(self, eta, alpha, epsilon, r, s):
         self.eta = eta
         self.alpha = alpha
         self.epsilon = epsilon
+
         self.r = r
         self.s = s
         self.beta = None
@@ -21,11 +24,6 @@ class Model(object):
         self.pi = None
         self.z = None
         self.init_nodes = None
-        self.z = None
-        self.beta = None
-        self.theta = None
-        self.pi = None
-        self.b = None
         self.converged = None
         self.z_init = None
         self.run_info = None

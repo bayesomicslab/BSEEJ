@@ -7,6 +7,7 @@ from BREM.model import Model
 from utilities import *
 
 
+# Main class is used as entrypoint for program
 class Main(object):
     """ Initializes the input values """
     n_cluster = 1
@@ -18,6 +19,7 @@ class Main(object):
     p = ''
     g = 'A2ML1'
     
+    # Class method main executes first
     @classmethod
     def main(cls, cmd_args):
         """
@@ -25,6 +27,7 @@ class Main(object):
         then makes the model and saves the results.
         """
         
+        # Calls an initialization class that initializes the input values if they weren't left as default
         cls.init(cmd_args)
         
         print('=====================================================')
@@ -40,16 +43,22 @@ class Main(object):
         print('model parameter, s:', cls.s)
         print('=====================================================')
         
+        # TODO: Still don't know what burn in is
         burn_in = cls.max_n_iter / 2
+        # TODO: check if this means it checks if the model has converged after a certain amuont of iterations
         convergence_checkpoint_interval = (cls.max_n_iter - burn_in) / 10
+        # TODO: model param?? Still not sure?
         epsilon = 0.000001
         
         # Read gene junction files
+        # Extracts a .zip that contains many .junc files for a single gene
         with zipfile.ZipFile(os.path.join(cls.p, cls.g) + '.zip', 'r') as zip_ref:
             zip_ref.extractall(cls.p)
 
         # Make the model and gene objects
         print('training gene', cls.g, 'with k =', cls.n_cluster)
+        
+        # Initializes the model with certain hyper-parameters
         model = Model(eta=cls.eta, alpha=cls.alpha, epsilon=epsilon, r=cls.r, s=cls.s)
         
         gene = Gene(cls.g, cls.p)
@@ -66,6 +75,8 @@ class Main(object):
         # Save all the results, including all the parameters in the model in a pickle file and clusters
         _ = save_results(gene, model)
     
+
+    # Initialize the options for the code
     @classmethod
     def init(cls, cmd_args):
         """ Check the parser for possible inputs and overrides the existing default values if any. """
@@ -81,6 +92,7 @@ class Main(object):
         cls.p = args.main_path
         cls.g = args.gene_name
     
+    # Creates the parser for input argments
     @classmethod
     def get_parser(cls):
         parser = argparse.ArgumentParser(description='Implementation of BREM.')
