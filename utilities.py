@@ -98,8 +98,12 @@ def generalized_min_node_cover(intersection_m, i=2):
 
 
 def find_min_clusters(nodes_df):
-    _, edges_list = get_conflict_for_plot(nodes_df)
+    _, edges_list = get_conflict_for_plot(nodes_df) # gets the adjacency list of junctions being nodes and if they intersect being edges 
+
+
     gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
+
+
     min_k = nx.graph_clique_number(gra)
     # min_k = len(nx.maximal_independent_set(G))
     return min_k
@@ -107,8 +111,10 @@ def find_min_clusters(nodes_df):
 
 def get_conflict_for_plot(nodes_df):
     """Find the intervals that have intersection"""
-    intersection_m = np.zeros([nodes_df.shape[0], nodes_df.shape[0]], dtype=np.int32)
-    edges_list = []
+    intersection_m = np.zeros([nodes_df.shape[0], nodes_df.shape[0]], dtype=np.int32) # Make a matrix that's thu number of junctions x the number of junctions
+
+    # iterates over the list of junctions and checks if one junction overlaps with another in any way then create an adjancency matrix and adjacency list where each node is the junction and each edge is if they overlap
+    edges_list = [] 
     for v1 in range(nodes_df.shape[0]):
         s1 = nodes_df.loc[v1, 'start']
         e1 = nodes_df.loc[v1, 'end']
@@ -119,7 +125,8 @@ def get_conflict_for_plot(nodes_df):
                 intersection_m[v1, v2] = 1
                 intersection_m[v2, v1] = 1
                 edges_list.append((v1, v2))
-    return intersection_m, edges_list
+
+    return intersection_m, edges_list # Return the adjacency matrix and the adjacency list
 
 
 def generate_interval_graph_nx(nodes_df, edges_list, intervalviz=True):

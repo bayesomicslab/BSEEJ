@@ -10,12 +10,13 @@ class Gene(object):
         self.name = name # Corresponds to the gene name
         self.junc_path = gene_list_dir + name + '/' # Corresponds to the path to the .junc file
         self.result_path = gene_list_dir + 'results_' + self.name # Sets a path to save model training results
-        self.samples_df, self.samples_df_dict = self.get_sample_df() 
+        self.samples_df, self.samples_df_dict = self.get_sample_df() # Gets the dictionary and the dataframe built from the .junc files, remember columns are 'chromStart' 'chromEnd' 'score'
+        self.nodes_df = self.get_junctions() #returns a modified dataframe with columns 'start' 'length' 'end' 'graph_labels' 'node_labels'
+        self.min_k = find_min_clusters(self.nodes_df)
+
 
         return
 
-        self.nodes_df = self.get_junctions()
-        self.min_k = find_min_clusters(self.nodes_df)
         self.trainable = self.is_trainable()
         self.all_n_k = list(range(self.min_k, self.min_k + 19)) if self.trainable else []
         self.intersection = None
@@ -72,6 +73,7 @@ class Gene(object):
             return [], []
         else:
             # Groups all junctions with the same start and end into only one and adds up their individual scores. This guarantees there are no repeated junctions
+            # This also drops 'chrom' and 'strand'
             samples_df = samples_df.groupby(['chromEnd', 'chromStart'])['score'].sum().reset_index()
             print(samples_df)
             
@@ -89,34 +91,42 @@ class Gene(object):
                 samples_df_dict[i] = {}
                 for ke in list(samples_df.columns):
                     samples_df_dict[i][ke] = samples_df.loc[i, ke]
+
+            # Return both the dataframe and the dictionary
             return samples_df, samples_df_dict
     
+    # Creates a new dataframe with columns 'start' 'length' 'end' 'graph_labels' 'node_labels' where start is chromStart end is chromEnd length is the calculated length of the junction graph labels is a string of format f"{start}_{end}" and node_labels is the row number
     def get_junctions(self):
         """Generate an interval graph,
         node_n = number of nodes in the generated graph
         Irange: (integer): The range, in which the intervals fall into"""
         
-        junc_num = self.samples_df.shape[0]
+        junc_num = self.samples_df.shape[0] # Gets the total number of unique junctions extracted from the files
         nodes_df = pd.DataFrame(data=np.zeros([junc_num, 3]), dtype=np.int32,
                                 columns=['start', 'length', 'end'],
-                                index=range(0, junc_num))
+                                index=range(0, junc_num)) # Creates a dataframe where each row is a junction and the columns are 'start' 'length' 'end'
         
-        nodes_df['start'] = self.samples_df.chromStart
-        nodes_df['end'] = self.samples_df.chromEnd
-        nodes_df['length'] = nodes_df['end'] - nodes_df['start']
+        nodes_df['start'] = self.samples_df.chromStart # Adds the chromStart from the past dataframe to the start of this new datafram
+        nodes_df['end'] = self.samples_df.chromEnd # Adds the chromEnd from the past dataframe to the end of this new dataframe
+        nodes_df['length'] = nodes_df['end'] - nodes_df['start'] # Calculate the length of the junction
         
-        nodes_df = nodes_df.sort_values(by=['end'])
-        nodes_df = nodes_df.reset_index(drop=True)
+        nodes_df = nodes_df.sort_values(by=['end']) # Sorts the values by their endings
+        nodes_df = nodes_df.reset_index(drop=True) #fixed the dataframes index to reflect the sorting
         # nodes_df['label'] = nodes_df.index.values
         graph_labels = []
         node_labels = []
         
+        # Iterate over all of the dataframe and make graph labels equal to the string f"{start}_{end}" where start and end are the values for the respective columns for tht row
+        # iterates over the dataframe and adds as node_labels the number of the row
         for v in range(nodes_df.shape[0]):
             graph_labels.append(str(int(nodes_df.loc[v, 'start'])) + '_' + str(int(nodes_df.loc[v, 'end'])))
             node_labels.append(str(v))
         
+        # Adds the two arraysjust created to the dataframe nodes
         nodes_df['graph_labels'] = graph_labels
         nodes_df['node_labels'] = node_labels
+
+        # Returns the dataframe nodes
         return nodes_df
     
     def get_conflict(self):
