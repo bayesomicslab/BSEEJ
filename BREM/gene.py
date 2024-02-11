@@ -3,13 +3,19 @@ from utilities import *
 
 class Gene(object):
     
-    def __init__(self, name, gene_list_dir):
+    def __init__(self, name, gene_list_dir, result_path):
         """Initialize gene instance from the zip file containing the gene .bam files:
         This function computes the gene nodes and the interval graph and minimum number of clusters"""
     
         self.name = name
-        self.junc_path = gene_list_dir + name + '/'
-        self.result_path = gene_list_dir + 'results_' + self.name
+        # self.junc_path = gene_list_dir + name + '/'
+        self.junc_path = gene_list_dir
+        # self.result_path = gene_list_dir + 'results_' + self.name
+        if not os.path.exists(result_path):
+            os.mkdir(result_path)
+        if not os.path.exists(os.path.join(result_path, self.name)):
+            os.mkdir(os.path.join(result_path, self.name))
+        self.result_path = os.path.join(result_path, self.name)
         self.samples_df, self.samples_df_dict = self.get_sample_df()
         self.nodes_df = self.get_junctions()
         self.min_k = find_min_clusters(self.nodes_df)
@@ -39,30 +45,36 @@ class Gene(object):
 
     def get_sample_df(self):
         """computes the gene's intro excisions from .bam files."""
-    
-        junc_files_list = os.listdir(self.junc_path)
-        samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
-        samples = []
-        for sample in samples_list:
-            if '.gz' in sample:
-                with gzip.open(self.junc_path + sample) as f:
-                    sample = pd.read_csv(f, sep='\t').values.tolist()
-                    samples.extend(sample)
-            else:
-                sample = pd.read_csv(self.junc_path + sample, sep='\t').values.tolist()
-                samples.extend(sample)
-        
-        samples_df = pd.DataFrame(samples, columns=['chrom', 'chromStart', 'chromEnd',
-                                                      'qual', 'score', 'strand'])
-        samples_df = samples_df[['chrom', 'chromStart', 'chromEnd','score', 'strand']]
+        min_coverage = 30
+        # junc_files_list = os.listdir(self.junc_path)
+        # samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
+        samples_list = [os.path.join(self.junc_path, s) for s in os.listdir(self.junc_path) if '.junc' in s]
+        columns = ['chrom', 'chromStart', 'chromEnd', 'junc_id', 'score', 'strand', 'start', 'end', 'f1', 'f2', 'f3',
+                   'f4']
+        samples_dfs = [pd.read_csv(file, sep='\t', names=columns) for file in samples_list]
+        samples_df = pd.concat(samples_dfs)
+        samples_df = samples_df[samples_df['score'] >= min_coverage].reset_index(drop=True)
+        # samples = []
+        # for sample in samples_list:
+        #     if '.gz' in sample:
+        #         with gzip.open(self.junc_path + sample) as f:
+        #             sample = pd.read_csv(f, sep='\t').values.tolist()
+        #             samples.extend(sample)
+        #     else:
+        #         sample = pd.read_csv(self.junc_path + sample, sep='\t').values.tolist()
+        #         samples.extend(sample)
+        #
+        # samples_df = pd.DataFrame(samples, columns=['chrom', 'chromStart', 'chromEnd',
+        #                                               'qual', 'score', 'strand'])
+        samples_df = samples_df[['chrom', 'chromStart', 'chromEnd', 'score', 'strand']]
         samples_df = samples_df.astype({"chromStart": np.int32, "chromEnd": np.int32, "score": np.int32})
-
+    
         if len(samples_df) == 0:
             return [], []
         else:
-            
+        
             samples_df = samples_df.groupby(['chromEnd', 'chromStart'])['score'].sum().reset_index()
-            
+        
             samples_df_dict = {}
             for i in range(len(samples_df)):
                 samples_df_dict[i] = {}
@@ -119,22 +131,36 @@ class Gene(object):
     
     def get_document(self):  # preprocess_gene_opt
         """Extract all samples information from non empty .bam files"""
-        junc_files_list = os.listdir(self.junc_path)
+    
+        min_coverage = 30
+        # junc_files_list = os.listdir(self.junc_path)
+        # samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
+        # samples_list = [os.path.join(self.junc_path, s) for s in os.listdir(self.junc_path) if '.junc' in s]
+        columns = ['chrom', 'chromStart', 'chromEnd', 'junc_id', 'score', 'strand', 'start', 'end', 'f1', 'f2', 'f3',
+                   'f4']
+        # samples_dfs = [pd.read_csv(file, sep='\t', names=columns) for file in samples_list]
+        # samples_df = pd.concat(samples_dfs)
+        # samples_df = samples_df[samples_df['score'] >= min_coverage].reset_index(drop=True)
+        # junc_files_list = os.listdir(self.junc_path)
         gene_word_dict = {self.name: {}}
-        samples_list = [s for s in junc_files_list if self.name + '_' in s and '.junc' in s]
+        samples_list = [os.path.join(self.junc_path, s) for s in os.listdir(self.junc_path) if '.junc' in s]
         valid_samples = []
         for sample in samples_list:
             if '.gz' in sample:
-                with gzip.open(self.junc_path + sample) as f:
-                    sample_df = pd.read_csv(f, sep='\t')
+                # with gzip.open(sample) as f:
+                sample_df = pd.read_csv(sample, names=columns, sep='\t', compression='gzip')
+                sample_df = sample_df[sample_df['score'] >= min_coverage].reset_index(drop=True)
+                sample_df = sample_df[['chrom', 'chromStart', 'chromEnd', 'score', 'strand']]
             else:
-                sample_df = pd.read_csv(self.junc_path + sample, sep='\t')
-            
+                sample_df = pd.read_csv(sample, names=columns, sep='\t')
+                sample_df = sample_df[sample_df['score'] >= min_coverage].reset_index(drop=True)
+                sample_df = sample_df[['chrom', 'chromStart', 'chromEnd', 'score', 'strand']]
+        
             if sample_df.shape[0] > 0:
                 valid_samples.append(sample)
                 gene_word_dict[self.name][sample] = {}
                 sample_df = sample_df.groupby(['chromStart', 'chromEnd'])['score'].sum().reset_index()
-                
+            
                 for idx, row in sample_df.iterrows():
                     start_row = row.chromStart
                     end_row = row.chromEnd

@@ -1,6 +1,5 @@
 import argparse
 import sys
-import zipfile
 
 from BREM.gene import Gene
 from BREM.model import Model
@@ -17,43 +16,45 @@ class Main(object):
     s = 1
     p = ''
     g = 'A2ML1'
-    
+    o = ''
     @classmethod
     def main(cls, cmd_args):
         """
         The main function sets the hyper-parameters values, accordingly initilizes BREM algorithm,
         then makes the model and saves the results.
         """
-        
+    
         cls.init(cmd_args)
-        
+    
         print('=====================================================')
         print('Gene:', cls.g)
-        print('path: ./', cls.p)
-        
+        print('junction path: ./', cls.p)
+    
+        print('result path:', cls.o)
+    
         print('Number of clusters:', cls.n_cluster)
         print('Maximum number of iterations:', cls.max_n_iter)
-        
+    
         print('model parameter, eta:', cls.eta)
         print('model parameter, alpha:', cls.alpha)
         print('model parameter, r:', cls.r)
         print('model parameter, s:', cls.s)
         print('=====================================================')
-        
+    
         burn_in = cls.max_n_iter / 2
         convergence_checkpoint_interval = (cls.max_n_iter - burn_in) / 10
         epsilon = 0.000001
-        
+    
         # Read gene junction files
-        with zipfile.ZipFile(os.path.join(cls.p, cls.g) + '.zip', 'r') as zip_ref:
-            zip_ref.extractall(cls.p)
-        
+        # with zipfile.ZipFile(os.path.join(cls.p, cls.g) + '.zip', 'r') as zip_ref:
+        #     zip_ref.extractall(cls.p)
+    
         # Make the model and gene objects
         print('training gene', cls.g, 'with k =', cls.n_cluster)
         model = Model(eta=cls.eta, alpha=cls.alpha, epsilon=epsilon, r=cls.r, s=cls.s)
-        
-        gene = Gene(cls.g, cls.p)
-        
+    
+        gene = Gene(cls.g, cls.p, cls.o)
+    
         # Preprocess the gene
         gene.preprocess()
         
@@ -78,6 +79,7 @@ class Main(object):
         cls.s = args.s
         cls.p = args.main_path
         cls.g = args.gene_name
+        cls.o = args.result_path
     
     @classmethod
     def get_parser(cls):
@@ -91,9 +93,9 @@ class Main(object):
         parser.add_argument("-r", "--r", required=False, help="model parameter r (default = 1)", default=cls.r)
         parser.add_argument("-s", "--s", required=False, help="model parameter s (default = 1)", default=cls.s)
         parser.add_argument("-p", "--main_path", required=False, help="Main path (default = ./)", default=cls.p)
+        parser.add_argument("-o", "--result_path", required=False, help="result path (default = ./)", default=cls.o)
         parser.add_argument("-g", "--gene_name", required=False, help="gene_name (default = A2ML1)",
                             default=cls.g)
-    
         return parser
 
 
