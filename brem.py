@@ -61,9 +61,8 @@ class Main(object):
         # Initializes the model with certain hyper-parameters
         model = Model(eta=cls.eta, alpha=cls.alpha, epsilon=epsilon, r=cls.r, s=cls.s)
         
+        # Initializes the gene with certain parameters, creates the interval graph, gets clique number
         gene = Gene(cls.g, cls.p)
-
-        quit()
         
         # Preprocess the gene
         gene.preprocess()

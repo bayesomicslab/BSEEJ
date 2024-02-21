@@ -31,6 +31,7 @@ class Model(object):
     def initialize_vars(self, gene, n_k):
         """This function initializes model parameters and other variables for training (Gibbs)"""
         self.init_nodes = find_initial_nodes(gene.nodes_df, n_k)
+
         z_matrix = np.zeros([gene.n_d, gene.n_v, n_k], dtype=np.int32)
         for doc in range(0, gene.n_d):
             for v in range(0, gene.n_v):
@@ -272,6 +273,7 @@ class Model(object):
         """Run Gibbs sampling on the data"""
     
         self.initialize_vars(gene, n_k)
+
         self.make_run_info(gene, n_k, burn_in, convergence_checkpoint_interval, n_iter)
         self.run_info['gibbs'] = {}
     

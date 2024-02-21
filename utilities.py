@@ -61,52 +61,56 @@ def getvecs(overallsize, n_sample, effective_k, n_introns, starts, ends, z_matri
 
 
 def get_lo(intersection_m):
-    lo = np.zeros([intersection_m.shape[0], 1], dtype=np.int32)
+    lo = np.zeros([intersection_m.shape[0], 1], dtype=np.int32) # make a list of the size of the number of nodes
     # compute lo
-    for node in range(intersection_m.shape[0]):
+
+
+    for node in range(intersection_m.shape[0]): # Iterate over the nodes
+        lo_set = [] # Build a set of lo
+        all_adj = np.where(intersection_m[node, :] == 1)[0] # Get all nodes that the particular node it's iterating over is adjacent to
+        for adj in all_adj: # Iterate over all the adjacent nodes
+            if adj < node: # If the adj node is less than the current node
+                lo_set.append(adj) # Append the adjacent node to lo_set
         
-        lo_set = []
-        all_adj = np.where(intersection_m[node, :] == 1)[0]
-        for adj in all_adj:
-            if adj < node:
-                lo_set.append(adj)
+        if len(lo_set) == 0: # if the lo set is empty then append the node itself
+            lo_set.append(node) 
         
-        if len(lo_set) == 0:
-            lo_set.append(node)
-        
-        lo[node] = min(lo_set)
-    return lo
+        lo[node] = min(lo_set) # the lo of the node is the smallest node that it's adjacent to
+    return lo # return the smallest node each node is adjacent to
 
 
 def generalized_min_node_cover(intersection_m, i=2):
     """Compute minimum node cover from the generalized min node cover algorithm."""
-    lo = get_lo(intersection_m)
-    w = np.zeros([intersection_m.shape[0], 1], dtype=np.int32)
-    mvc = []
+    lo = get_lo(intersection_m) # get a list of the smallest node each node is adjacent to (IMPORTANT: lo for generalized vertex cover over interval graphs asumes IG ordering) (IG ordering is the ordering of the intervals of an interval graph in non-decreasing order of their right endpoints) therefore: for each vertes v we define LO as LO(v) = min(w for each w < v and w connected to v in the interval graph) if such w exists else v
+
+    w = np.zeros([intersection_m.shape[0], 1], dtype=np.int32) # build an empty list with the amount of nodes as it's size
+    mvc = [] # Minimum vertex cover list
     
-    for node in range(intersection_m.shape[0]):
-        must = False
-        for u in range(int(lo[node]), node + 1):
-            w[u] += 1
-            if w[u] == i:
+    for node in range(intersection_m.shape[0]): # Iterate over all the nodes
+        must = False # Flag to indicate if that node must be included in the minimum vertex cover
+        for u in range(int(lo[node]), node + 1): # iterate from the LO(v) to v+1 this guarantees it includes v
+            w[u] += 1 # Add to the count of adjacent nodes
+            if w[u] == i: # if the node's count is equal to i then that intersection must be added
                 must = True
         if must:
-            mvc.append(node)
-            for u in range(int(lo[node]), node + 1):
+            mvc.append(node) # Add the node to the minimum vertex cover
+            for u in range(int(lo[node]), node + 1): # iterate from the LO(v) to the nod itself and reduce the count of w by 1
                 w[u] -= 1
-    return mvc
+    return mvc # Returns a list with the minimumm node cover
 
 
+# Returns the clique number of the graph in nodes_df
 def find_min_clusters(nodes_df):
     _, edges_list = get_conflict_for_plot(nodes_df) # gets the adjacency list of junctions being nodes and if they intersect being edges 
 
 
-    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
+    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False) # Creates a networks graph from the interval graph that was already in nodes_df
 
 
-    min_k = nx.graph_clique_number(gra)
+    min_k = nx.graph_clique_number(gra) # Gets the size of the largest clique in the graph, a clique in a graph is the a subgraph such that every two nodes are adjacent to each other
+
     # min_k = len(nx.maximal_independent_set(G))
-    return min_k
+    return min_k # Return the clique number
 
 
 def get_conflict_for_plot(nodes_df):
@@ -129,42 +133,49 @@ def get_conflict_for_plot(nodes_df):
     return intersection_m, edges_list # Return the adjacency matrix and the adjacency list
 
 
+# Generates a graph in networks representing the interval graphs that were created for the junctions
 def generate_interval_graph_nx(nodes_df, edges_list, intervalviz=True):
     """Generate the graph G=(V,E) using networkx library and visualize"""
-    gra = nx.Graph()
+    gra = nx.Graph() # Creates an empty networkx graph object
+
     if intervalviz:
-        newedges_list = [(nodes_df['graph_labels'][ee[0]], nodes_df['graph_labels'][ee[1]]) for ee in edges_list]
-        gra.add_nodes_from(nodes_df['graph_labels'])
+        newedges_list = [(nodes_df['graph_labels'][ee[0]], nodes_df['graph_labels'][ee[1]]) for ee in edges_list] # Create a new adjacency list of the graph with edges being labeled as 'chromStart_chromEnd' instead of their index on the list
+        gra.add_nodes_from(nodes_df['graph_labels']) # adds all of the node names to the networkx graph
     else:
-        newedges_list = [(nodes_df['node_labels'][ee[0]], nodes_df['node_labels'][ee[1]]) for ee in edges_list]
-        gra.add_nodes_from(nodes_df['node_labels'])
+        newedges_list = [(nodes_df['node_labels'][ee[0]], nodes_df['node_labels'][ee[1]]) for ee in edges_list] # Create a new adjacency list of the graph with edges labelesd with the dataframe rows because node_labels corresponds to the row number
+        gra.add_nodes_from(nodes_df['node_labels']) # adds all of the node names to the networkx graph
         # newedgesList = edges_list
     
+    # iterate over the adjacency list of edges and add the edge to the networks graph
     for e in newedges_list:
         gra.add_edge(*e)
-    return gra
+
+    return gra #return the networkx graph of intervals of junctions
 
 
-def split_training_test(document_orig, tr_percentage=95):
-    tr_size = int(tr_percentage / 100 * document_orig.shape[0])
-    indices = np.random.RandomState(seed=2021).permutation(document_orig.shape[0])
-    training_idx, test_idx = indices[:tr_size], indices[tr_size:]
-    document = document_orig[training_idx, :]
-    document_te = document_orig[test_idx, :]
-    return document, document_te, training_idx, test_idx
+def split_training_test(document_orig, tr_percentage=95): # Self explanatory, splits the dataset into test and training, now document makes sense as an object because document allows you to split and not have corssover score values
+    tr_size = int(tr_percentage / 100 * document_orig.shape[0]) # calculates how many samples should be separated for training
+    indices = np.random.RandomState(seed=2021).permutation(document_orig.shape[0]) # grab a random permutation of the indices of the documen with seed 2021
+    training_idx, test_idx = indices[:tr_size], indices[tr_size:] # splits the indices into two, one for training and one for testing
+    document = document_orig[training_idx, :] # grab those documents determined for training
+    document_te = document_orig[test_idx, :] # grab those documents determined for testing
+    return document, document_te, training_idx, test_idx # return the split datasets
 
 
 def find_mis(nodes_df):
-    _, edges_list = get_conflict_for_plot(nodes_df)
-    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
-    gc = nx.complement(gra)
-    mis = nx.graph_clique_number(gc)
-    max_ind_set = nx.maximal_independent_set(gra)
-    while len(max_ind_set) < mis:
+    _, edges_list = get_conflict_for_plot(nodes_df) # get the adjacency matrix and adjacency list of junctions that overlap with each other
+    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False) #returns the interval graph represented in a networkx graph object
+    gc = nx.complement(gra) # Returns the inverse of the interval graph, ie those junctions that don't overlap are now connected
+    mis = nx.graph_clique_number(gc) # gets the cliqe number of the inverse of the interval graph (the amouunt of nodes in the biggest clique) This turns out to be the maximal indepent set cardinality because the inverse guarantees no adjacency between two nodes (think about it)
+
+    max_ind_set = nx.maximal_independent_set(gra) # Gets the maximal independent set (largest set of nodes such that no two nodes are adjacent) from the interval graph
+
+    while len(max_ind_set) < mis: # calculating the maximal_independent_set is np-hard and therefore the solution provided by networkx is an approximate, therefore keep iterating until the real set is found
         max_ind_set = nx.maximal_independent_set(gra)
-    max_ind_set = [int(n) for n in max_ind_set]
-    max_ind_set.sort()
-    return mis, max_ind_set
+    max_ind_set = [int(n) for n in max_ind_set] #grab the ids of the nodes in the max independent set
+    max_ind_set.sort() # sort the ids in the max independent set
+
+    return mis, max_ind_set # return the number of nodes in the max independt set and the max independent set
 
 
 def get_initialization(nodes_df, n_k):
@@ -179,14 +190,18 @@ def get_initialization(nodes_df, n_k):
 
 
 def find_initial_nodes(nodes_df, n_k):
-    _, edges_list = get_conflict_for_plot(nodes_df)
-    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
+    _, edges_list = get_conflict_for_plot(nodes_df) #get the adjacency list of the interval graph
+
+    gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False) # adds interval graph to networkx graph class
+    
+    # The following adds all of the approximate maximal independent sets to a list
     all_max_ind_set = []
     for i in range(1000):
-        temp = nx.maximal_independent_set(gra)
+        temp = nx.maximal_independent_set(gra) 
         if temp not in all_max_ind_set:
             all_max_ind_set.append(temp)
     
+
     while len(all_max_ind_set) < n_k:
         temp = nx.maximal_independent_set(gra)
         all_max_ind_set.append(temp)
