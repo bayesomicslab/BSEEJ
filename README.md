@@ -20,11 +20,27 @@ git clone https://github.com/bayesomicslab/BSEEJ.git
 cd BSEEJ
 ```
 
-2. Install the project dependencies and activate the environment:
+2. Install the project dependencies and activate the environment using one of these options:
+
+Manually install a conda environment and install the dependencies (recommended choice):
 ```sh
-conda env create -f bseej_env.yml
+conda create -n bseej_env python==3.10
+conda install -c pytorch -c conda-forge -c defaults arviz nbclient nbconvert nbformat networkx numba numexpr numpy pandas scikit-image scikit-learn scipy Theano
 conda activate bseej_env
 ```
+or use the requirement.txt file to install specific versions we used for developing the code:
+
+```sh
+conda create -n bseej_env python==3.10
+pip install -r requirements.txt
+conda activate bseej_env
+```
+ or alternatively you can use yml file that is provided.
+ ```sh
+conda env create -f bseej_env.yml
+conda activate bseej_env
+``` 
+
 
 3. Run the code:
 ```sh
@@ -32,7 +48,8 @@ python3 bseej.py
 ```
 
 Or alternatively for changing model parameters or training other genes run:
- 
+Please note that junction path should contain junction files (.junc) with the same format as we provided in the A2ML1.zip after decompression. 
+
 ```sh
 python3 bseej.py -k clusters_no -i max iteration  -e eta hyper parameter -a alpha hyper-parameter -r r -s s -p junction_path -g gene_name -o results_path
 ```
@@ -45,7 +62,7 @@ python3 bseej.py -k clusters_no -i max iteration  -e eta hyper parameter -a alph
     - junction_path is the relative or full path to the folder that contains the junctions reads. Here one gene (A2ML1.zip) has been uploaded for example to be run and it should first unzip and then give the extracted path to the code.
     - gene: the name of the gene (Here by default, gene is A2ML1).
 
-
+We also provided an example of usage of our code in example.ipynb file.
 
 ## Prepare the input:
 
