@@ -1,39 +1,40 @@
-# **B**ayesian **r**econstruction of **e**xcised **m**RNA (BREM)
+<!-- # **B**ayesian **r**econstruction of **e**xcised **m**RNA (BREM) -->
+# **B**ayesian Reconstruction and Differential Testing of Excised Introns
 
 *Authors:* <br/>
 Marjan Hosseini<br/>
 Devin J. McConnell<br/>
 Derek Aguiar
 
-The code for BREM method is provided in 'brem.py' file.
-The junction files for one gene (A2ML1) is added in the github.
-To run BREM with default configurations, simply run the requirements.txt.
-Then run 'brem.py'. More detailed guide is the follow. 
+The code for BSEEJ method is provided in 'bseej.py' file.
+The compressed version of junction files for one example gene (A2ML1) is added in the github.
+To run BSEEJ with default configurations, simply run the requirements.txt.
+Then run 'bseej.py'. More detailed guide is the follow. 
 
 
 
 ## Usage
 1. Clone the repository:
 ```sh
-git clone https://github.com/aguiarlab/BREM.git
-cd BREM
+git clone https://github.com/bayesomicslab/BSEEJ.git
+cd BSEEJ
 ```
 
 2. Install the project dependencies and activate the environment:
 ```sh
-conda env create -f brem_env.yml
-conda activate brem_env
+conda env create -f bseej_env.yml
+conda activate bseej_env
 ```
 
 3. Run the code:
 ```sh
-python3 brem.py
+python3 bseej.py
 ```
 
 Or alternatively for changing model parameters or training other genes run:
  
 ```sh
-python3 brem.py -k clusters_no -i max iteration  -e eta hyper parameter -a alpha hyper-parameter -r r -s s -p path -g gene
+python3 bseej.py -k clusters_no -i max iteration  -e eta hyper parameter -a alpha hyper-parameter -r r -s s -p junction_path -g gene_name -o results_path
 ```
     - clusters_no: number of clusters, this number should be larger than the number of minimum node cover of the interval graph of the intron excisions
     - max iteration: the maximum number of iterations for the Gibbs updates
@@ -41,7 +42,7 @@ python3 brem.py -k clusters_no -i max iteration  -e eta hyper parameter -a alpha
     - alpha corresponds to alpha hyper-parameter (See the model section)  
     - r corresponds to r hyper-parameter (See the model section)  
     - s corresponds to s hyper-parameter (See the model section) 
-    - path is the relative or full path to the folder that contains the genes samples junctions reads as a zip file. Here one gene (A2ML1.zip) has been uploaded for example to be run and the path to it is the default path.
+    - junction_path is the relative or full path to the folder that contains the junctions reads. Here one gene (A2ML1.zip) has been uploaded for example to be run and it should first unzip and then give the extracted path to the code.
     - gene: the name of the gene (Here by default, gene is A2ML1).
 
 
