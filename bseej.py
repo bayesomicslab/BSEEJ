@@ -28,7 +28,7 @@ class Main(object):
     
         print('=====================================================')
         print('Gene:', cls.g)
-        print('junction path: ./', cls.p)
+        print('junction path:', cls.p)
     
         print('result path:', cls.o)
     

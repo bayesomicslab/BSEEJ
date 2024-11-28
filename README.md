@@ -99,8 +99,6 @@ After portcullis is complete we do an overlap check between the junctions found 
 
 
 
-
-
 ## Model:
 
 **BREM Probabilistic Graphical Model** 
