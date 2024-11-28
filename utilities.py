@@ -100,7 +100,8 @@ def generalized_min_node_cover(intersection_m, i=2):
 def find_min_clusters(nodes_df):
     _, edges_list = get_conflict_for_plot(nodes_df)
     gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
-    min_k = nx.graph_clique_number(gra)
+    # min_k = nx.graph_clique_number(gra)
+    min_k = max(len(clique) for clique in nx.find_cliques(gra))
     # min_k = len(nx.maximal_independent_set(G))
     return min_k
 
@@ -151,7 +152,9 @@ def find_mis(nodes_df):
     _, edges_list = get_conflict_for_plot(nodes_df)
     gra = generate_interval_graph_nx(nodes_df, edges_list, intervalviz=False)
     gc = nx.complement(gra)
-    mis = nx.graph_clique_number(gc)
+    # This is for older versions of networkx
+    # mis = nx.graph_clique_number(gc)
+    mis = max(len(clique) for clique in nx.find_cliques(gc))
     max_ind_set = nx.maximal_independent_set(gra)
     while len(max_ind_set) < mis:
         max_ind_set = nx.maximal_independent_set(gra)
