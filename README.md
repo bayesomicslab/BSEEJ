@@ -6,6 +6,11 @@ Marjan Hosseini<br/>
 Devin J. McConnell<br/>
 Derek Aguiar
 
+**Graphical abstract** 
+<br/><br/>
+<img src="./docs/graphical_abstract.png" width="900"> 
+<br/><br/>
+
 The code for BSEEJ method is provided in 'bseej.py' file.
 The compressed version of junction files for one example gene (A2ML1) is added in the github.
 To run BSEEJ with default configurations, simply run the requirements.txt.
