@@ -139,9 +139,11 @@ Main **variables and parameters** include:
 
 * $r, s$ are priors for $\pi$ (Beta distribution):
 <br/><br/>
+
 $$
 \pi_k \sim Beta(r, s), \forall k = {1, \dots, K}
 $$
+
 <!-- ![](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cpi_k%20%5Csim%20Beta%28r%2Cs%29%2C%20%5Cforall%20k%3D%5C%7B1%2C%20%5Cdots%2C%20K%5C%7D) -->
 <br/><br/>
     * Increase in mean of Beta$(r,s)$ results in increase in cluster size |SEEJ|.
@@ -158,9 +160,11 @@ $$
 * For cluster k, $\beta_{k}$ is a $|V|$-dimensional Dirichlet which represents the distribution of the cluster k over the intron excisions.
 <br/><br/>
 <!-- ![](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cbeta_k%20%5Csim%20Dirichlet_%7B%7CV%7C%7D%28%7B%5Ceta%7D%20%5Codot%20%7Bb_%7Bk%7D%7D%29) -->
+
 $$
 \beta_k \sim Dirichlet_{|V|}(\eta \odot b_k)
 $$
+
 <br/><br/>
     * $\eta = (\eta_1, \eta_2, ..., \eta_{|V|})$ is $\beta$ variable prior.
 
@@ -168,9 +172,11 @@ $$
 * For the i<sup>th</sup> sample, variable $\theta_i$ is a $K$-dimensional Dirichlet distribution and represents the proportions of the clusters in sample $i$.
 <br/><br/>
 <!-- ![](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Ctheta_i%20%5Csim%20Dirichlet_K%28%7B%5Calpha%7D%29) -->
+
 $$
-\theta_i \sim Dirichlet_K(\alpha)
+\theta_i \sim \text{Dirichlet}_K(\alpha)
 $$
+
 <br/><br/>
     * $\alpha = (\alpha_1, \alpha_2, ..., \alpha_N)$ is $\theta$ variable prior.
 
@@ -178,7 +184,7 @@ $$
 <br/><br/>
 <!-- ![](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cbegin%7Balign*%7D%20z_%7Bij%7D%20%26%20%5Csim%20Multinomial%28%5Ctheta_i%29%20%5C%5C%20%26%20%7BZ%7D%20%5Cin%20%5C%7B1%2C%20%5Cdots%2C%20K%5C%7D%5E%7BN%20%5Ctimes%20J_i%7D%20%5Cend%7Balign*%7D) -->
 $$
-z_{ij} \sim Multinomial(\theta_i) \\
+z_{ij} \sim \text{Multinomial}(\theta_i) \\
 z \in \{1, \ldots, K\}^{N \times J_i}
 $$
 <br/><br/>
@@ -187,7 +193,7 @@ $$
 <br/><br/>
 <!-- ![](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20w_%7Bij%7D%20%5Csim%20Multinomial%28%5Cbeta_%7Bz_%7Bij%7D%7D%29) -->
 $$
-w_{ij} \sim Multinomial(\beta_{z_{ij}})
+w_{ij} \sim \text{Multinomial}(\beta_{z_{ij}})
 $$
 <br/><br/>
 
