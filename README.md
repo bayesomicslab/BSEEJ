@@ -38,8 +38,9 @@ or use the requirement.txt file to install specific versions we used for develop
 
 ```sh
 conda create -n bseej_env python==3.10
-pip install -r requirement.txt
 conda activate bseej_env
+pip install -r requirement.txt
+
 ```
  or alternatively you can use yml file that is provided.
  ```sh
