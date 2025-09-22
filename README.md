@@ -30,14 +30,15 @@ cd BSEEJ
 Manually install a conda environment and install the dependencies (recommended choice):
 ```sh
 conda create -n bseej_env python==3.10
-conda install -c pytorch -c conda-forge -c defaults arviz nbclient nbconvert nbformat networkx numba numexpr numpy pandas scikit-image scikit-learn scipy Theano
 conda activate bseej_env
+conda install -c pytorch -c conda-forge -c defaults arviz nbclient nbconvert nbformat networkx numba numexpr numpy pandas scikit-image scikit-learn scipy Theano
+
 ```
 or use the requirement.txt file to install specific versions we used for developing the code:
 
 ```sh
 conda create -n bseej_env python==3.10
-pip install -r requirements.txt
+pip install -r requirement.txt
 conda activate bseej_env
 ```
  or alternatively you can use yml file that is provided.
