@@ -1,24 +1,24 @@
 <!-- # **B**ayesian **r**econstruction of **e**xcised **m**RNA (BREM) -->
 # **B**ayesian Reconstruction and Differential Testing of Excised Introns
 
-*Authors:* <br/>
-Marjan Hosseini<br/>
-Devin J. McConnell<br/>
+*Authors:*  
+Marjan Hosseini  
+Devin J. McConnell  
 Derek Aguiar
 
-**Graphical abstract** 
+**Graphical abstract**  
 <br/><br/>
-<img src="./docs/graphical_abstract.png" width="900"> 
+<img src="./docs/graphical_abstract.png" width="900">
 <br/><br/>
 
-The code for BSEEJ method is provided in 'bseej.py' file.
-The compressed version of junction files for one example gene (A2ML1) is added in the github.
-To run BSEEJ with default configurations, simply run the requirements.txt.
-Then run 'bseej.py'. More detailed guide is the follow. 
+The code for the **BSEEJ** method is provided in `bseej.py`.  
+A compressed folder of junction files for one example gene (**A2ML1**) is included in this repository.  
+To run BSEEJ with default configurations, first install dependencies (e.g., from `requirements.txt` or `environment.yml`), then run `bseej.py`. A more detailed guide follows.
 
-
+---
 
 ## Installation
+
 1. Clone the repository:
 ```sh
 git clone https://github.com/bayesomicslab/BSEEJ.git
@@ -27,34 +27,71 @@ cd BSEEJ
 
 2. Install the project dependencies and activate the environment using one of these options:
 
-Option 1: Install a conda environment (recommended):
+**Option 1 (recommended): Conda**
 ```sh
 conda env create -f environment.yml
 conda activate bseej_env
-
 ```
-Option 2: Use the requirement.txt file to install specific versions we used for developing the code:
 
+**Option 2: venv + pip (uses pinned versions from `requirements.txt`)**
 ```sh
 python -m venv .venv
 # Linux / macOS
 source .venv/bin/activate
 # Windows (PowerShell)
 # .\.venv\Scripts\Activate.ps1
+
 pip install --upgrade pip
 pip install -r requirements.txt
+```
 
+3. Unzip the example data:
+```sh
+unzip A2ML1.zip
+```
+<!-- > Using `-d A2ML1` ensures the data lands in a predictable folder you can reference later. -->
 
+---
 
+## How to Run
 
-3. Run the code:
+**Quick start (uses default parameters):**
 ```sh
 python3 bseej.py
 ```
 
-Or alternatively for changing model parameters or training other genes run:
-Please note that junction path should contain junction files (.junc) with the same format as we provided in the A2ML1.zip after decompression. 
+**Example with explicit paths/params (documents intent and works on fresh setups):**
+```sh
+python3 bseej.py -g A2ML1 -p ./A2ML1 -o ./results -k 1 -i 1000 -e 0.01 -a 1 -r 1 -s 1
+```
 
+> **Note**: The junction path must contain `.junc` files (e.g., the unzipped `A2ML1` folder).  
+> The output directory will be created if it does not exist.
+
+---
+
+## Usage
+
+```sh
+python3 bseej.py [options]
+```
+
+**Options** *(defaults shown by `python3 bseej.py --help`)*:
+- `-g, --gene <GENE_NAME>`: Gene symbol to train (e.g., `A2ML1`; default: `A2ML1`)
+- `-p, --junction_path <DIR>`: Directory containing `.junc` files (default: `./A2ML1`)
+- `-o, --out_dir <DIR>`: Output directory (created if missing; default: `./results`)
+- `-k, --clusters <INT>`: Number of clusters (default: `1`)
+- `-i, --max_iter <INT>`: Maximum iterations (default: `1000`)
+- `-e, --eta <FLOAT>`: Model parameter η (default: `0.01`)
+- `-a, --alpha <FLOAT>`: Model parameter α (default: `1.0`)
+- `-r, --r <FLOAT>`: Model parameter r (default: `1.0`)
+- `-s, --s <FLOAT>`: Model parameter s (default: `1.0`)
+- `-h, --help`: Show help and exit
+
+An example notebook (`example.ipynb`) demonstrates usage.
+
+
+<!-- 
 ```sh
 python3 bseej.py -k clusters_no -i max iteration  -e eta hyper parameter -a alpha hyper-parameter -r r -s s -p junction_path -g gene_name -o results_path
 ```
@@ -65,9 +102,9 @@ python3 bseej.py -k clusters_no -i max iteration  -e eta hyper parameter -a alph
     - r corresponds to r hyper-parameter (See the model section)  
     - s corresponds to s hyper-parameter (See the model section) 
     - junction_path is the relative or full path to the folder that contains the junctions reads. Here one gene (A2ML1.zip) has been uploaded for example to be run and it should first unzip and then give the extracted path to the code.
-    - gene: the name of the gene (Here by default, gene is A2ML1).
+    - gene: the name of the gene (Here by default, gene is A2ML1). -->
 
-We also provided an example of usage of our code in example.ipynb file.
+<!-- We also provided an example of usage of our code in example.ipynb file. -->
 
 ## Prepare the input:
 
@@ -178,7 +215,7 @@ $$
 $$
 
 <br/><br/>
-    * $\alpha = (\alpha_1, \alpha_2, ..., \alpha_N)$ is $\theta$ variable prior.
+    * $\alpha = (\alpha_1, \alpha_2, ..., \alpha_K)$ is $\theta$ variable prior.
 
 * Variable $z_{ij}$ is the cluster assignment for j<sup>th</sup> intron excision in i<sup>th</sup> sample. It can take a natural value between 1 and $K$ and follows a Multinomial:
 <br/><br/>

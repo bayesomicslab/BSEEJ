@@ -12,7 +12,9 @@ class Gene(object):
         self.junc_path = gene_list_dir
         # self.result_path = gene_list_dir + 'results_' + self.name
         if not os.path.exists(result_path):
-            os.mkdir(result_path)
+            print(result_path)
+            # os.mkdir(result_path)
+            os.makedirs(result_path, exist_ok=True)
         if not os.path.exists(os.path.join(result_path, self.name)):
             os.mkdir(os.path.join(result_path, self.name))
         self.result_path = os.path.join(result_path, self.name)

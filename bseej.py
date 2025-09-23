@@ -88,14 +88,14 @@ class Main(object):
                             default=1)
         parser.add_argument("-i", "--max_n_iter", help="Max number of iterations (integer) (default = 1000)",
                             default=cls.max_n_iter)
-        parser.add_argument("-e", "--eta", required=False, help="eta (default = 0.01)", default=cls.eta)
-        parser.add_argument("-a", "--alpha", required=False, help="alpha (default = 1)", default=cls.alpha)
-        parser.add_argument("-r", "--r", required=False, help="model parameter r (default = 1)", default=cls.r)
-        parser.add_argument("-s", "--s", required=False, help="model parameter s (default = 1)", default=cls.s)
-        parser.add_argument("-p", "--main_path", required=False, help="Main path (default = ./)", default=cls.p)
-        parser.add_argument("-o", "--result_path", required=False, help="result path (default = ./)", default=cls.o)
+        parser.add_argument("-e", "--eta", required=False, help="eta (default = 0.01)", default=0.01)
+        parser.add_argument("-a", "--alpha", required=False, help="alpha (default = 1)", default=1)
+        parser.add_argument("-r", "--r", required=False, help="model parameter r (default = 1)", default=1)
+        parser.add_argument("-s", "--s", required=False, help="model parameter s (default = 1)", default=1)
+        parser.add_argument("-p", "--main_path", required=False, help="Main path (default = A2ML1/)", default='A2ML1/')
+        parser.add_argument("-o", "--result_path", required=False, help="result path (default = ./)", default='./results')
         parser.add_argument("-g", "--gene_name", required=False, help="gene_name (default = A2ML1)",
-                            default=cls.g)
+                            default='A2ML1')
         return parser
 
 
