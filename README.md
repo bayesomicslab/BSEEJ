@@ -18,7 +18,7 @@ Then run 'bseej.py'. More detailed guide is the follow.
 
 
 
-## Usage
+## Installation
 1. Clone the repository:
 ```sh
 git clone https://github.com/bayesomicslab/BSEEJ.git
@@ -27,26 +27,24 @@ cd BSEEJ
 
 2. Install the project dependencies and activate the environment using one of these options:
 
-Manually install a conda environment and install the dependencies (recommended choice):
+Option 1: Install a conda environment (recommended):
 ```sh
 conda env create -f environment.yml
 conda activate bseej_env
-conda install -c pytorch -c conda-forge -c defaults arviz nbclient nbconvert nbformat networkx numba numexpr numpy pandas scikit-image scikit-learn scipy Theano
 
 ```
-or use the requirement.txt file to install specific versions we used for developing the code:
+Option 2: Use the requirement.txt file to install specific versions we used for developing the code:
 
 ```sh
-conda create -n bseej_env python==3.10
-conda activate bseej_env
-pip install -r requirement.txt
+python -m venv .venv
+# Linux / macOS
+source .venv/bin/activate
+# Windows (PowerShell)
+# .\.venv\Scripts\Activate.ps1
+pip install --upgrade pip
+pip install -r requirements.txt
 
-```
- or alternatively you can use yml file that is provided.
- ```sh
-conda env create -f bseej_env.yml
-conda activate bseej_env
-``` 
+
 
 
 3. Run the code:

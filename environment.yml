@@ -1,0 +1,29 @@
+name: bseej_env
+channels:
+  - conda-forge
+dependencies:
+  # Core
+  - python=3.10
+  - numpy=1.26.*
+  - scipy=1.14.*
+  - pandas=2.2.*
+  - scikit-learn=1.5.*
+  - scikit-image=0.24.*
+  - numexpr=2.10.*
+  - numba=0.60.*
+  - networkx=3.4.*
+
+  # Plotting / utils
+  - matplotlib-base=3.9.*
+  - imageio=2.36.*
+  - xarray=2024.11.0
+  - xarray-einstats=0.8.0
+
+  # Probabilistic / MCMC tools
+  - arviz=0.20.0
+  - theano=1.0.5
+
+  # Jupyter support (optional but convenient)
+  - nbformat
+  - nbclient
+  - nbconvert
